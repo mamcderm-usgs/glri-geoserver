@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <parent>
+        <groupId>gov.usgs.cida.lkm</groupId>
+        <artifactId>lkm</artifactId>
+        <version>1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>lkm-geoserver</artifactId>
+    <packaging>war</packaging>
+
+    <name>LKM GeoServer</name>
+    
+    <dependencies>
+        <dependency>
+            <groupId>gov.usgs.cida.lkm</groupId>
+            <artifactId>lkm-datastore</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.geoserver</groupId>
+            <artifactId>geoserver</artifactId>
+            <version>${geoserver.version}</version>
+            <type>war</type>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.0.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.2</version>
+                <configuration>
+                    <overlays>
+                        <overlay>
+                            <groupId>org.geoserver</groupId>
+                            <artifactId>geoserver</artifactId>
+                        </overlay>
+                    </overlays>
+<!-- This file, which sets the Java EE version to 5, is required for Netbeans to
+    offer Java EE 5 containers (servers) to the list of available servers available
+    to execute the war.  If this file is missing the default Java EE version is
+    assumed to be Java EE 6 and containers such as Apache Tomcat 6.0 can't be 
+    selected.  This empty file is placed here so netbeans can identify the project
+    as a Java EE 5 project.  We don't want to include this in the final war as 
+    it's presense will preclude the use of the WEB-INF/web.xml in the war we are
+    overlaying. -->
+                   <warSourceExcludes>WEB-INF/web.xml</warSourceExcludes>
+                   <dependentWarExcludes>WEB-INF/lib/servlet-api-2.5.jar</dependentWarExcludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
