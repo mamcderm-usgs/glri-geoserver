@@ -10,7 +10,7 @@
     <name>LKM</name>
     
     <modules>
-        <module>datastore</module>
+        <module>prms-datastore</module>
         <module>geoserver</module>
     </modules>
     

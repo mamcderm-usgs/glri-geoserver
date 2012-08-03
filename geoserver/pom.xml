@@ -18,7 +18,7 @@
     <dependencies>
         <dependency>
             <groupId>gov.usgs.cida.lkm</groupId>
-            <artifactId>lkm-datastore</artifactId>
+            <artifactId>prms-datastore</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

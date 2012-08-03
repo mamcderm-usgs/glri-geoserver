@@ -10,10 +10,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>lkm-datastore</artifactId>
+    <artifactId>prms-datastore</artifactId>
     <packaging>jar</packaging>
 
-    <name>LKM DataStore</name>
+    <name>LKM PRMS DataStore</name>
     
     <dependencies>
         <dependency>
