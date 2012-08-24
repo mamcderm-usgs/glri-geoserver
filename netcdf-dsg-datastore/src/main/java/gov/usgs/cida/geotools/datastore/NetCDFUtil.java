@@ -137,7 +137,6 @@ public class NetCDFUtil {
         if (variableList == null) {
             variableList = Collections.emptyList();
         }
-//        return Collections.unmodifiableList(variableList);
         return variableList;
     }
     
@@ -154,7 +153,7 @@ public class NetCDFUtil {
         return null;
     }
     
-   public static VariableSimpleIF getStationIdVariable(FeatureDataset featureDataset) {
+    public static VariableSimpleIF getStationIdVariable(FeatureDataset featureDataset) {
         return getStationIdVariable(featureDataset.getNetcdfFile().getVariables());
     }
     
