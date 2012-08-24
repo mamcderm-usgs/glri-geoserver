@@ -60,7 +60,7 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
         
         AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
         
-        int maxOccurs = animationFileMetaData.getTimeStepCount();
+//        int maxOccurs = animationFileMetaData.getTimeStepCount();
         
         animationAttributeDescriptors.add(atBuilder.
 //                minOccurs(1).

@@ -1,0 +1,2 @@
+gov.usgs.cida.geotools.datastore.NetCDFDirectoryShapefileDataStoreFactory
+gov.usgs.cida.geotools.datastore.NetCDFShapefileDataStoreFactory

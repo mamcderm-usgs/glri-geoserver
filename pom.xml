@@ -11,12 +11,14 @@
     
     <modules>
         <module>prms-datastore</module>
+        <module>netcdf-dsg-datastore</module>
         <module>geoserver</module>
     </modules>
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <geoserver.version>2.2-RC1</geoserver.version>
+        <thredds.version>4.3.12</thredds.version>
     </properties>
 
     <repositories>
@@ -24,14 +26,33 @@
 	            <id>osgeo</id>
 	            <url>http://download.osgeo.org/webdav/geotools/</url>
 	        </repository>
-	        <repository>
+            <repository>
+                <id>unidata-releases</id>
+                <url>http://artifacts.unidata.ucar.edu/content/repositories/unidata-releases</url>
+            </repository>
+            <repository>
 	            <id>cida-thirdparty</id>
 	            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-thirdparty</url>
 	        </repository>
+<!--	        <repository>
+	            <id>cida-tds-releases</id>
+	            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-tds-releases</url>
+	        </repository>
+	        <repository>
+	            <id>cida-tds-snapshots</id>
+	            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-tds-snapshots</url>
+	        </repository>-->
 	</repositories>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>edu.ucar</groupId>
+                <artifactId>thredds-parent</artifactId>
+                <version>${thredds.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.geoserver</groupId>
                 <artifactId>geoserver</artifactId>
@@ -43,6 +64,16 @@
                 <groupId>joda-time</groupId>
                 <artifactId>joda-time</artifactId>
                 <version>2.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.6.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>1.6.4</version>
             </dependency>
 	        <dependency>
 	            <groupId>junit</groupId>

@@ -20,12 +20,33 @@
             <groupId>gov.usgs.cida.lkm</groupId>
             <artifactId>prms-datastore</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>jdom</artifactId>
+                    <groupId>jdom</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>gov.usgs.cida.lkm</groupId>
+            <artifactId>netcdf-dsg-datastore</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>je</artifactId>
+                    <groupId>com.sleepycat</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.geoserver</groupId>
             <artifactId>geoserver</artifactId>
             <version>${geoserver.version}</version>
             <type>war</type>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -55,6 +76,14 @@
                         <overlay>
                             <groupId>org.geoserver</groupId>
                             <artifactId>geoserver</artifactId>
+                            <excludes>
+                                <exclude>WEB-INF/lib/servlet-api-2.5.jar</exclude>
+                                <exclude>WEB-INF/lib/slf4j-api-1.5.8.jar</exclude>
+                                <exclude>WEB-INF/lib/slf4j-log4j12-1.4.2.jar</exclude>
+                                <exclude>WEB-INF/lib/log4j12-1.2.14.jar</exclude>
+                                <exclude>WEB-INF/lib/jdom-1.0.jar</exclude>
+                                <!--<exclude>WEB-INF/lib/je-4.1.10.jar</exclude>-->
+                            </excludes>
                         </overlay>
                     </overlays>
 <!-- This file, which sets the Java EE version to 5, is required for Netbeans to
@@ -66,7 +95,6 @@
     it's presense will preclude the use of the WEB-INF/web.xml in the war we are
     overlaying. -->
                    <warSourceExcludes>WEB-INF/web.xml</warSourceExcludes>
-                   <dependentWarExcludes>WEB-INF/lib/servlet-api-2.5.jar</dependentWarExcludes>
                 </configuration>
             </plugin>
         </plugins>
