@@ -53,45 +53,54 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
     protected List<AttributeDescriptor> readAttributes() throws IOException {
         shapefileAttributeDescriptors = super.readAttributes();
         
-        FieldIndexedDbaseFileReader dbaseReader = createDbaseReader();
-        DbaseFileHeader dbaseFileHeader = dbaseReader.getHeader();
-        int dbaseFieldCount = dbaseFileHeader.getNumFields();
-        dBaseFileAttributeDescriptors = new ArrayList<AttributeDescriptor>(dbaseFieldCount - 1);
+        FieldIndexedDbaseFileReader dbaseReader = null;
+        try {
+            dbaseReader = createDbaseReader();
         
-        AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
+            DbaseFileHeader dbaseFileHeader = dbaseReader.getHeader();
+            int dbaseFieldCount = dbaseFileHeader.getNumFields();
+            dBaseFileAttributeDescriptors = new ArrayList<AttributeDescriptor>(dbaseFieldCount - 1);
 
-        for (int dbaseFieldIndex = 0; dbaseFieldIndex < dbaseFieldCount; ++dbaseFieldIndex) {
-            String dbaseFieldName = dbaseFileHeader.getFieldName(dbaseFieldIndex);
-            if (!shapefileJoinAttributeName.equalsIgnoreCase(dbaseFieldName)) {
-                dBaseFileAttributeDescriptors.add(atBuilder.
-                    userData(KEY_FIELD_INDEX, dbaseFieldIndex).
-                    binding(dbaseFileHeader.getFieldClass(dbaseFieldIndex)).
-                    buildDescriptor(dbaseFileHeader.getFieldName(dbaseFieldIndex)));
+            AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
+
+            for (int dbaseFieldIndex = 0; dbaseFieldIndex < dbaseFieldCount; ++dbaseFieldIndex) {
+                String dbaseFieldName = dbaseFileHeader.getFieldName(dbaseFieldIndex);
+                if (!shapefileJoinAttributeName.equalsIgnoreCase(dbaseFieldName)) {
+                    dBaseFileAttributeDescriptors.add(atBuilder.
+                        userData(KEY_FIELD_INDEX, dbaseFieldIndex).
+                        binding(dbaseFileHeader.getFieldClass(dbaseFieldIndex)).
+                        buildDescriptor(dbaseFileHeader.getFieldName(dbaseFieldIndex)));
+                }
+            }
+
+            shapefileAttributeNames = new ArrayList<String>();
+            for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
+                shapefileAttributeNames.add(attributeDescriptor.getLocalName());
+            }
+            dbaseAttributeNames = new ArrayList<String>();
+            for (AttributeDescriptor attributeDescriptor : dBaseFileAttributeDescriptors) {
+                dbaseAttributeNames.add(attributeDescriptor.getLocalName());
+            }
+
+            shapefileJoinAttributeIndex = shapefileAttributeNames.indexOf(shapefileJoinAttributeName);
+
+            attributeDescriptors = new ArrayList<AttributeDescriptor>(
+                    shapefileAttributeDescriptors.size() +
+                    dBaseFileAttributeDescriptors.size());
+            attributeDescriptors.addAll(shapefileAttributeDescriptors);
+            attributeDescriptors.addAll(dBaseFileAttributeDescriptors);
+        } finally {
+            if (dbaseReader != null) {
+                try { dbaseReader.close(); } catch (IOException ignore) {}
             }
         }
-
-        shapefileAttributeNames = new ArrayList<String>();
-        for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
-            shapefileAttributeNames.add(attributeDescriptor.getLocalName());
-        }
-        dbaseAttributeNames = new ArrayList<String>();
-        for (AttributeDescriptor attributeDescriptor : dBaseFileAttributeDescriptors) {
-            dbaseAttributeNames.add(attributeDescriptor.getLocalName());
-        }
-
-        shapefileJoinAttributeIndex = shapefileAttributeNames.indexOf(shapefileJoinAttributeName);
-
-        attributeDescriptors = new ArrayList<AttributeDescriptor>(
-                shapefileAttributeDescriptors.size() +
-                dBaseFileAttributeDescriptors.size());
-        attributeDescriptors.addAll(shapefileAttributeDescriptors);
-        attributeDescriptors.addAll(dBaseFileAttributeDescriptors);
 
         return attributeDescriptors;
     }
 
     private Map<Object, Integer> fieldIndexMap;
-    // NOTE:  not synchronized because this is called in contructor
+    // NOTE:  not synchronized because this is called in contructor,
+    // synchronization of initialization of fileIndexMap is the concern...
     private FieldIndexedDbaseFileReader createDbaseReader() throws IOException {
         File dBaseFile = new File(dBaseURL.getFile());
         FileChannel dBaseFileChannel = (new FileInputStream(dBaseFile)).getChannel();
