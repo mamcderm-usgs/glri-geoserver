@@ -17,7 +17,7 @@
     
     <dependencies>
         <dependency>
-            <groupId>gov.usgs.cida.lkm</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>prms-datastore</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -28,7 +28,18 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>gov.usgs.cida.lkm</groupId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>multi-dbf-datastore</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>jdom</artifactId>
+                    <groupId>jdom</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>netcdf-dsg-datastore</artifactId>
             <version>${project.version}</version>
             <exclusions>

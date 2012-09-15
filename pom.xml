@@ -12,6 +12,7 @@
     <modules>
         <module>prms-datastore</module>
         <module>netcdf-dsg-datastore</module>
+        <module>multi-dbf-datastore</module>
         <module>geoserver</module>
     </modules>
     
