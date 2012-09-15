@@ -1,3 +1,5 @@
+// NOTE:  must remain in org.geotools.data.shapefile.dbf due to access of
+// access of package protected variables in super class 
 package org.geotools.data.shapefile.dbf;
 
 import java.io.IOException;
@@ -29,6 +31,7 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
         super(fileChannel, useMemoryMappedBuffer, stringCharset, timeZone);
     }
 
+    // copied from IndexedDBaseFileReader.goTo(...)
     public void setCurrentRecordByIndex(int recordIndex) throws IOException, UnsupportedOperationException {
         if (recordIndex > header.getNumRecords() - 1) {
             throw new IllegalArgumentException("recordIndex > recordCount");
