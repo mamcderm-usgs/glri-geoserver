@@ -10,10 +10,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>prms-datastore</artifactId>
+    <artifactId>datastore-util</artifactId>
     <packaging>jar</packaging>
 
-    <name>LKM PRMS DataStore</name>
+    <name>LKM DataStore Utilities</name>
     
     <dependencies>
         <dependency>
@@ -35,19 +35,6 @@
         <dependency>
             <groupId>org.geotools</groupId>
             <artifactId>gt-shapefile</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>datastore-util</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.thoughtworks.xstream</groupId>
-            <artifactId>xstream</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

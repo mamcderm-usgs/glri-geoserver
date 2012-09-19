@@ -18,7 +18,6 @@ import org.joda.time.DateTime;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.filter.*;
 
 /**
  *
@@ -27,6 +26,7 @@ import org.opengis.filter.*;
 public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
 
     private final static String ATTRIBUTE_TIMESTAMP = "timestamp";
+    private final static String ATTRIBUTE_NHRU = "nhru";
      
     private final URL animationURL;
     private final String shapefileNHRUAttributeName;
@@ -67,13 +67,13 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
 //                maxOccurs(maxOccurs).
 //                nillable(false).
                 binding(Date.class).
-                buildDescriptor("timestamp"));
+                buildDescriptor(ATTRIBUTE_TIMESTAMP));
         animationAttributeDescriptors.add(atBuilder.
 //                minOccurs(1).
 //                maxOccurs(maxOccurs).
 //                nillable(false).
                 binding(Integer.class).
-                buildDescriptor("nhru"));          
+                buildDescriptor(ATTRIBUTE_NHRU));          
 
         
         List<RecordEntryDescriptor> recordEntryDescriptors = animationFileMetaData.getRecordEntryDescriptors();
@@ -142,42 +142,16 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
     }
     
     private boolean requiresShapefileAttributes(Query query) {
-        if (query == null) {
-            return true;
-        }
-        if (query == Query.ALL) {
-            return true;
-        }
-        List<String> propertyNames = Arrays.asList(query.getPropertyNames());
-        List<String> attributeNames = Arrays.asList(DataUtilities.attributeNames(query.getFilter()));
-        return  !Collections.disjoint(propertyNames, shapefileAttributeNames) ||
-                !Collections.disjoint(attributeNames, shapefileAttributeNames);
+        return QueryUtil.requiresAttributes(query, shapefileAttributeNames);
     }
     
     private boolean requiresAnimationAttributes(Query query) {
-        if (query == null) {
-            return true;
-        }
-        if (query == Query.ALL) {
-            return true;
-        }
-        List<String> propertyNames = Arrays.asList(query.getPropertyNames());
-        List<String> attributeNames = Arrays.asList(DataUtilities.attributeNames(query.getFilter()));
-        return !Collections.disjoint(propertyNames, animationAttributeNames) ||
-               !Collections.disjoint(attributeNames, animationAttributeNames);
+        return QueryUtil.requiresAttributes(query, animationAttributeNames);
     }
     
     private DateTime extractTimeStampFromQuery(Query query) {
-        if (query == null) {
-            return null;
-        }
-        Filter filter = query.getFilter();
-        if (filter == null) {
-            return null;
-        }
-        PRMSAnimationTimeStampFilterExtractor extractor = new PRMSAnimationTimeStampFilterExtractor();
-        filter.accept(extractor, null);
-        return extractor.getTimeStamp();
+        Date timestamp = QueryUtil.extractValueFromQueryFilter(query, ATTRIBUTE_TIMESTAMP, Date.class);
+        return timestamp == null ? null : new DateTime(timestamp);
     }
     
     @Override

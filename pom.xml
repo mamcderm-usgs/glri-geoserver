@@ -10,6 +10,7 @@
     <name>LKM</name>
     
     <modules>
+		<module>datastore-util</module>
         <module>prms-datastore</module>
         <module>netcdf-dsg-datastore</module>
         <module>multi-dbf-datastore</module>

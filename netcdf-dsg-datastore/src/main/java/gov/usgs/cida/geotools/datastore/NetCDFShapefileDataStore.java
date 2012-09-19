@@ -15,7 +15,6 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.filter.*;
 import ucar.nc2.VariableSimpleIF;
 import ucar.nc2.constants.FeatureType;
 import ucar.nc2.ft.FeatureDataset;
@@ -155,42 +154,15 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
     }
     
     private boolean requiresShapefileAttributes(Query query) {
-        if (query == null) {
-            return true;
-        }
-        if (query == Query.ALL) {
-            return true;
-        }
-        List<String> propertyNames = Arrays.asList(query.getPropertyNames());
-        List<String> attributeNames = Arrays.asList(DataUtilities.attributeNames(query.getFilter()));
-        return  !Collections.disjoint(propertyNames, shapefileAttributeNames) ||
-                !Collections.disjoint(attributeNames, shapefileAttributeNames);
+        return QueryUtil.requiresAttributes(query, shapefileAttributeNames);
     }
     
     private boolean requiresNetCDFAttributes(Query query) {
-        if (query == null) {
-            return true;
-        }
-        if (query == Query.ALL) {
-            return true;
-        }
-        List<String> propertyNames = Arrays.asList(query.getPropertyNames());
-        List<String> attributeNames = Arrays.asList(DataUtilities.attributeNames(query.getFilter()));
-        return !Collections.disjoint(propertyNames, netCDFAttributeNames) ||
-               !Collections.disjoint(attributeNames, netCDFAttributeNames);
+        return QueryUtil.requiresAttributes(query, netCDFAttributeNames);
     }
     
     private Date extractTimeStampFromQuery(Query query) {
-        if (query == null) {
-            return null;
-        }
-        Filter filter = query.getFilter();
-        if (filter == null) {
-            return null;
-        }
-        NetCDFQueryTimeFilterExtractor extractor = new NetCDFQueryTimeFilterExtractor(observationTimeVariable.getShortName());
-        filter.accept(extractor, null);
-        return extractor.getTime();
+        return QueryUtil.extractValueFromQueryFilter(query, observationTimeVariable.getShortName(), Date.class);
     }
     
     @Override
