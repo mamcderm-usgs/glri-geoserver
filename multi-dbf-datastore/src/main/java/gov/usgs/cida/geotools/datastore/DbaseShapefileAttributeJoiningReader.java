@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.geotools.data.shapefile.ShapefileAttributeReader;
-import org.geotools.data.shapefile.dbf.DbaseFileReader;
 import org.geotools.data.shapefile.dbf.FieldIndexedDbaseFileReader;
-import org.geotools.data.shapefile.dbf.IndexedDbaseFileReader;
 import org.geotools.renderer.ScreenMap;
 import org.opengis.feature.type.AttributeDescriptor;
 
@@ -22,8 +20,8 @@ public class DbaseShapefileAttributeJoiningReader  extends ShapefileAttributeRea
     private final int shapefileJoinAttributeIndex;
     private final FieldIndexedDbaseFileReader dbaseReader;
     
-    private FieldIndexedDbaseFileReader.Row dBaseRow;
-    private int[] dBaseFieldIndices;
+    private FieldIndexedDbaseFileReader.Row dbaseRow;
+    private int[] dbaseFieldIndices;
     
     public DbaseShapefileAttributeJoiningReader(ShapefileAttributeReader delegate, FieldIndexedDbaseFileReader dbaseReader, int shapefileJoinAttributeIndex) throws IOException {
         super(hack(delegate), null, null); // lame duck
@@ -32,12 +30,11 @@ public class DbaseShapefileAttributeJoiningReader  extends ShapefileAttributeRea
         this.dbaseReader = dbaseReader;
         
         int attributeCount = getAttributeCount();
-        dBaseFieldIndices = new int[attributeCount];
+        dbaseFieldIndices = new int[attributeCount];
         for (int attributeIndex = 0; attributeIndex < attributeCount; ++attributeIndex) {
             Object o = getAttributeType(attributeIndex).getUserData().get(DbaseShapefileDataStore.KEY_FIELD_INDEX);
-            dBaseFieldIndices[attributeIndex] = o instanceof Integer ?
-                    ((Integer)o).intValue() :
-                    -1;
+            dbaseFieldIndices[attributeIndex] = o instanceof Integer ?
+                    ((Integer)o).intValue() : -1;
         }
     }
 
@@ -61,19 +58,19 @@ public class DbaseShapefileAttributeJoiningReader  extends ShapefileAttributeRea
     public void next() throws IOException {
         delegate.next();
         if (dbaseReader.setCurrentRecordByValue(delegate.read(shapefileJoinAttributeIndex))) {
-            dBaseRow = dbaseReader.readRow();
+            dbaseRow = dbaseReader.readRow();
         } else {
-            dBaseRow = null;
+            dbaseRow = null;
         }
     }
 
     @Override
     public Object read(int attributeIndex) throws IOException, ArrayIndexOutOfBoundsException {
-        int dBaseFieldIndex = dBaseFieldIndices[attributeIndex];
+        int dBaseFieldIndex = dbaseFieldIndices[attributeIndex];
         if (dBaseFieldIndex < 0) {
             return delegate.read(attributeIndex);
         } else {
-            return dBaseRow == null ? null : dBaseRow.read(dBaseFieldIndex);
+            return dbaseRow == null ? null : dbaseRow.read(dBaseFieldIndex);
         }
     }
 
