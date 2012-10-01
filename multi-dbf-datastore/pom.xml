@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>gov.usgs.cida.lkm</groupId>
-        <artifactId>lkm</artifactId>
+        <groupId>gov.usgs.cida.glri</groupId>
+        <artifactId>glri</artifactId>
         <version>1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -13,7 +13,7 @@
     <artifactId>multi-dbf-datastore</artifactId>
     <packaging>jar</packaging>
 
-    <name>LKM DBF Joining DataStore</name>
+    <name>GLRI DBF Joining DataStore</name>
     
     <dependencies>
         <dependency>

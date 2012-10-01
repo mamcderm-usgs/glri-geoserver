@@ -4,16 +4,16 @@
     <modelVersion>4.0.0</modelVersion>
     
     <parent>
-        <groupId>gov.usgs.cida.lkm</groupId>
-        <artifactId>lkm</artifactId>
+        <groupId>gov.usgs.cida.glri</groupId>
+        <artifactId>glri</artifactId>
         <version>1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>lkm-geoserver</artifactId>
+    <artifactId>glri-geoserver</artifactId>
     <packaging>war</packaging>
 
-    <name>LKM GeoServer</name>
+    <name>GLRI GeoServer</name>
     
     <dependencies>
         <dependency>
@@ -51,7 +51,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>lkm-wps</artifactId>
+            <artifactId>glri-wps</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
