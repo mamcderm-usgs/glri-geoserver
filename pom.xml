@@ -10,10 +10,11 @@
     <name>LKM</name>
     
     <modules>
-		<module>datastore-util</module>
+        <module>datastore-util</module>
         <module>prms-datastore</module>
         <module>netcdf-dsg-datastore</module>
         <module>multi-dbf-datastore</module>
+        <module>wps</module>
         <module>geoserver</module>
     </modules>
     
@@ -24,26 +25,31 @@
     </properties>
 
     <repositories>
-	        <repository>
-	            <id>osgeo</id>
-	            <url>http://download.osgeo.org/webdav/geotools/</url>
-	        </repository>
-            <repository>
-                <id>unidata-releases</id>
-                <url>http://artifacts.unidata.ucar.edu/content/repositories/unidata-releases</url>
-            </repository>
-            <repository>
-	            <id>cida-thirdparty</id>
-	            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-thirdparty</url>
-	        </repository>
-<!--	        <repository>
-	            <id>cida-tds-releases</id>
-	            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-tds-releases</url>
-	        </repository>
-	        <repository>
-	            <id>cida-tds-snapshots</id>
-	            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-tds-snapshots</url>
-	        </repository>-->
+        <!-- must come before geoserver repository -->
+        <repository>
+            <id>cida-thirdparty</id>
+            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-thirdparty</url>
+        </repository>
+        <repository>
+            <id>osgeo</id>
+            <url>http://download.osgeo.org/webdav/geotools/</url>
+        </repository>
+        <repository>
+            <id>geoserver</id>
+            <url>http://repo.opengeo.org/</url>
+        </repository>
+        <repository>
+            <id>unidata-releases</id>
+            <url>http://artifacts.unidata.ucar.edu/content/repositories/unidata-releases</url>
+        </repository>
+<!--        <repository>
+            <id>cida-tds-releases</id>
+            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-tds-releases</url>
+        </repository>
+        <repository>
+            <id>cida-tds-snapshots</id>
+            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-tds-snapshots</url>
+        </repository>-->
 	</repositories>
 
     <dependencyManagement>
