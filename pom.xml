@@ -19,7 +19,7 @@
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <geoserver.version>2.2-RC1</geoserver.version>
+        <geoserver.version>2.2</geoserver.version>
         <thredds.version>4.3.12</thredds.version>
     </properties>
 
