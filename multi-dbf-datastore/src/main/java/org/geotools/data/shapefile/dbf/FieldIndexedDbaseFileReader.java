@@ -8,10 +8,14 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.resources.NIOUtilities;
 
 public class FieldIndexedDbaseFileReader extends DbaseFileReader {
+        
+    private static final Logger LOGGER = org.geotools.util.logging.Logging.getLogger(FieldIndexedDbaseFileReader.class);
     
     public FieldIndexedDbaseFileReader(FileChannel fileChannel) throws IOException {
         super(fileChannel, true, ShapefileDataStore.DEFAULT_STRING_CHARSET);
@@ -96,7 +100,18 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
             read(); // required when using readField
             Object value = readField(fieldIndex);
             if (indexMap.put(value, recordIndex) != null) {
-                throw new IllegalStateException("record values at for field " + header.getFieldName(fieldIndex) + " are not unique, " + value + " already indexed");
+                //throw new IllegalStateException("Record values at for field " + header.getFieldName(fieldIndex) + " are not unique, " + value + " already indexed.");
+                /*  TODO:  don't want to be this lenient, there should be some checking
+                 *  if the join column values in the source DBF to guarantee we
+                 *  aren't attempt to join on an value that's non-unique...
+                 */
+                LOGGER.log(
+                        Level.WARNING,
+                        "Record values at for field {0} are not unique, {1} already indexed.  Will use last record encountered",
+                        new Object[] {
+                            header.getFieldName(fieldIndex),
+                            value
+                        });
             }
         }
     }
@@ -119,8 +134,16 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
         if (index == null || index.isEmpty()) {
             throw new IllegalArgumentException("index is null or empty");
         }
-        if (index.size() != header.getNumRecords()) {
-            throw new IllegalArgumentException("index size doesn't match record count");
+//        if (index.size() != header.getNumRecords()) {
+//            throw new IllegalArgumentException("index size greater than record count");
+//        }
+        // TODO:  don't want to be this lenient...  see notes in buildFileIndes(int)
+        if (index.size() > header.getNumRecords()) {
+            throw new IllegalArgumentException("index size greater than record count");
+        } else if (index.size() < header.getNumRecords()) {
+            LOGGER.log(
+                Level.WARNING,
+                "index count <  record count.  Most likely due to index creation on field w/ non-unique values.");
         }
         this.indexMap = index;
     }
