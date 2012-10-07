@@ -105,13 +105,13 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
                  *  if the join column values in the source DBF to guarantee we
                  *  aren't attempt to join on an value that's non-unique...
                  */
-                LOGGER.log(
-                        Level.WARNING,
-                        "Record values at for field {0} are not unique, {1} already indexed.  Will use last record encountered",
-                        new Object[] {
-                            header.getFieldName(fieldIndex),
-                            value
-                        });
+//                LOGGER.log(
+//                        Level.WARNING,
+//                        "Record values for field {0} are not unique, {1} already indexed.  Will use last record encountered",
+//                        new Object[] {
+//                            header.getFieldName(fieldIndex),
+//                            value
+//                        });
             }
         }
     }
