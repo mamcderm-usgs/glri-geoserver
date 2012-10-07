@@ -124,6 +124,7 @@
                         </overlay>
                     </overlays>
                    <warSourceExcludes>WEB-INF/web.xml</warSourceExcludes>
+                   <packagingExcludes>META-INF/context.xml</packagingExcludes>
                 </configuration>
             </plugin>
             <plugin>
