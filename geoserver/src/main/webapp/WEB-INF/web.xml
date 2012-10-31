@@ -28,11 +28,19 @@
 -->
 <web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
     <filter>
-        <filter-name>AllowCrossOriginFilter</filter-name>
-        <filter-class>gov.usgs.cida.geoserver.AllowCrossOriginFilter</filter-class>
+        <filter-name>CORS</filter-name>
+        <filter-class>com.thetransactioncompany.cors.CORSFilter</filter-class>
+        <init-param>
+            <param-name>cors.allowOrigin</param-name>
+            <param-value>*</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.supportedHeaders</param-name>
+            <param-value>Origin, X-Requested-With, Content-Type</param-value>
+        </init-param>
     </filter>
     <filter-mapping>
-        <filter-name>AllowCrossOriginFilter</filter-name>
+        <filter-name>CORS</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 </web-app>
