@@ -16,6 +16,7 @@
         <module>multi-dbf-datastore</module>
         <module>wps</module>
         <module>geoserver</module>
+        <module>demo-ui</module>
     </modules>
     
     <properties>

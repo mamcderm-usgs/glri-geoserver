@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <title>NHD Flowlines Demo</title>
+        <link rel="stylesheet" href="js/openlayers/theme/default/style.css" type="text/css">
+        <link rel="stylesheet" href="js/ext/resources/css/ext-all.css" type="text/css">
+        <script src="js/ext/adapter/ext/ext-base.js"></script>
+        <script src="js/ext/ext-all.js"></script>
+        <!--<script src="js/openlayers/OpenLayers.js"></script>-->
+        <script src="js/openlayers/lib/OpenLayers.js"></script>
+        <script src="js/openlayers/extension/Raster.js"></script>
+        <script src="js/openlayers/extension/Raster/Grid.js"></script>
+        <script src="js/openlayers/extension/Raster/Composite.js"></script>
+        <script src="js/openlayers/extension/Raster/Operation.js"></script>
+        <script src="js/openlayers/extension/Layer/Raster.js"></script>
+        <script src="js/openlayers/extension/Renderer/DeclusterCanvas.js"></script>
+        <style type="text/css">
+            html, body {
+                font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+                font-size: small;
+                margin: 0;
+                width: 100%;
+                height: 100%;
+            }
+            #map {
+                margin: auto;
+                width: 100%;
+                height: 100%;
+                position: relative;
+            }
+            #text {
+                position: absolute;
+                bottom: 1em;
+                left: 1em;
+                width: 512px;
+                z-index: 20000;
+                background-color: white;
+                padding: 0 0.5em 0.5em 0.5em;
+            }
+            .olControlLayerSwitcher .layersDiv {
+                border-radius:  10px 0 0 10px;
+                padding-bottom: 10px;
+                background: #130085;  /* fallback for IE - IE6 requires background shorthand */
+                background: rgba(0, 60, 136, 0.75);
+                filter: alpha(opacity=75);
+            }
+            .olControlLayerSwitcher img {
+                opacity: 0.75;
+                filter: alpha(opacity=75);
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map">
+            <script src="nhd.js"></script>
+            <div style="position:absolute; bottom:20px; left: 20px; z-index: 9999;" id="windowX"></div>
+        </div>
+    </body>
+</html>
