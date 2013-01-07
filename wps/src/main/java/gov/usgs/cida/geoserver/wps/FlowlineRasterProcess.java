@@ -2,7 +2,6 @@ package gov.usgs.cida.geoserver.wps;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
@@ -300,9 +299,13 @@ public class FlowlineRasterProcess implements GeoServerProcess {
                     // TODO:  Only allows classes of up to 1 byte (255)
                     int sC = sourcePixel[0];
                     int dC = destinationPixel[0];
-                    int sA = sourcePixel[3];
-                    int dA = destinationPixel[3];
-                    if (sC > dC || sC == dC && sA > dA ) {
+//                    int sA = sourcePixel[3];
+//                    int dA = destinationPixel[3];
+//                    if (sC > dC || (sC == dC && sA > dA)) {
+//                        destinationOutRaster.setPixel(x, y, sourcePixel);
+//                    }
+                    if (sC > dC) {
+                        sourcePixel[3] = 255;
                         destinationOutRaster.setPixel(x, y, sourcePixel);
                     }
                 }
