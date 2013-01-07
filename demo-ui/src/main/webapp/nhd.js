@@ -1,12 +1,12 @@
 
 var flowlineStyle = "FlowlineStreamOrder";
 var flowlineLayer = "glri:NHDFlowline";
-var gageStyle = "GageLocStreamOrder";
-var gageLayer = "glri:GageLoc";
+var gageLocStyle = "GageLocStreamOrder";
+var gageLocLayer = "glri:GageLoc";
 //var geoserverBaseURL = "http://localhost:18080/glri-geoserver/";
-var geoserverBaseURL = "http://localhost:8080/geoserver/";
+//var geoserverBaseURL = "http://localhost:8080/geoserver/";
 //var geoserverBaseURL = "http://cida-wiwsc-gdp2qa.er.usgs.gov:8084/lkm-geoserver/";
-//var geoserverBaseURL = "http://internal.cida.usgs.gov/lkm-geoserver/";
+var geoserverBaseURL = "http://internal.cida.usgs.gov/lkm-geoserver/";
 
 var streamOrderClipValues = [
     7, // 0
@@ -130,7 +130,7 @@ flowlineRaster.setData(flowlineClipOperationData);
 var gageWMSData = new OpenLayers.Layer.WMS(
     "Gage WMS (Data)",
     geoserverBaseURL + "wms",
-    { layers: gageLayer, styles: gageStyle, format: "image/png", tiled: "true" },
+    { layers: gageLocLayer, styles: gageLocStyle, format: "image/png", tiled: "true" },
     { isBaseLayer: false, opacity: 0, displayInLayerSwitcher: false, tileOptions: { crossOriginKeyword: 'anonymous' } }
 );
 var gageRaster = new OpenLayers.Layer.Raster({
@@ -178,17 +178,49 @@ var gageClipOperationData = gageClipOperation(gageComposite);
 gageRaster.setData(gageClipOperationData);
 // END - Gage Raster
 
-var mapExtent = new OpenLayers.Bounds(-93.18993823245728, 40.398554803028716, -73.65211352945056, 48.11264392438207);
+var mapProj = new OpenLayers.Projection("EPSG:900913");
+var wgs84Proj = new OpenLayers.Projection("EPSG:4326");
+
+var mapExtent = new OpenLayers.Bounds(-93.18993823245728, 40.398554803028716, -73.65211352945056, 48.11264392438207).transform(wgs84Proj, mapProj);
 var mapCenterStart = mapExtent.getCenterLonLat();
 var mapOptions = {
     div: "map",
-    projection: "EPSG:4326",
+    projection: mapProj,
+//    units: "m",
     restrictedExtent: mapExtent,
     layers: [
-        new OpenLayers.Layer.WMS(
-            "Blue Marble",
-            "http://maps.opengeo.org/geowebcache/service/wms",
-            { layers: "bluemarble" }, { isBaseLayer: true }),
+//        new OpenLayers.Layer.WMS(
+//            "Blue Marble",
+//            "http://maps.opengeo.org/geowebcache/service/wms",
+//            { layers: "bluemarble" }, { isBaseLayer: true }),
+//        new OpenLayers.Layer.ArcGIS93Rest(
+//            "World Imagery",
+//            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export", 
+//            {layers: "show:0"}),
+        new OpenLayers.Layer.XYZ(
+            "World Imagery",
+            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}",
+            { isBaseLayer: true, /*sphericalMercator : true, projection: "EPSG:102113",*/ units: "m" } ),
+        new OpenLayers.Layer.XYZ(
+            "World Physical Map",
+            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/${z}/${y}/${x}",
+            { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
+//        new OpenLayers.Layer.XYZ(
+//            "World Shaded Relief",
+//            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/${z}/${y}/${x}",
+//            { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
+        new OpenLayers.Layer.XYZ(
+            "World Street Map",
+            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}",
+            { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
+//        new OpenLayers.Layer.XYZ(
+//            "World Terrain Base",
+//            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/${z}/${y}/${x}",
+//            { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
+        new OpenLayers.Layer.XYZ(
+            "World Topo Map",
+            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}",
+            { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
         flowlinesWMSData,
         gageWMSData,
         flowlineRaster,
