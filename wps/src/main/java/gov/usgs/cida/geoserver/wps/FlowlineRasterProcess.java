@@ -74,9 +74,7 @@ public class FlowlineRasterProcess implements GeoServerProcess {
         private final int coverageWidth;
         private final int coverageHeight;
         private ReferencedEnvelope extent;
-        private Geometry extentGeometry;
         private GridGeometry2D gridGeometry;
-        private boolean transformFeatures;
         private MathTransform featureToRasterTransform;
         private int[] coordGridX = new int[COORD_GRID_CHUNK_SIZE];
         private int[] coordGridY = new int[COORD_GRID_CHUNK_SIZE];
@@ -152,7 +150,7 @@ public class FlowlineRasterProcess implements GeoServerProcess {
                 return;
             }
 
-            if (geometry.intersects(extentGeometry)) {
+            if (extent.intersects(feature.getBounds().toBounds(extent.getCoordinateReferenceSystem()))) {
 
                 graphics.setColor(valueToColor(((Number) attributeValue).intValue()));
 
@@ -190,19 +188,15 @@ public class FlowlineRasterProcess implements GeoServerProcess {
                 extent = new ReferencedEnvelope(bounds);
             }
 
-            extentGeometry = (new GeometryFactory()).toGeometry(extent);
-
             CoordinateReferenceSystem featuresCRS = featureBounds.getCoordinateReferenceSystem();
             CoordinateReferenceSystem boundsCRS = bounds.getCoordinateReferenceSystem();
 
-            transformFeatures = false;
             if (featuresCRS != null && boundsCRS != null && !CRS.equalsIgnoreMetadata(boundsCRS, featuresCRS)) {
                 try {
                     featureToRasterTransform = CRS.findMathTransform(featuresCRS, boundsCRS, true);
                 } catch (Exception ex) {
                     throw new TransformException("Unable to transform features into output coordinate reference system", ex);
                 }
-                transformFeatures = true;
             }
         }
 
@@ -225,7 +219,7 @@ public class FlowlineRasterProcess implements GeoServerProcess {
         }
 
         private void drawGeometry(Geometries geomType, Geometry geometry) throws TransformException {
-            if (transformFeatures) {
+            if (featureToRasterTransform != null) {
                 try {
                     geometry = JTS.transform(geometry, featureToRasterTransform);
                 } catch (TransformException ex) {
