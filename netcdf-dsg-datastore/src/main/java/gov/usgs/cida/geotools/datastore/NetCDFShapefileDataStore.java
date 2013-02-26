@@ -144,12 +144,12 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
     }
 
     @Override
-    protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query) throws IOException {
+    protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query, String[] properties) throws IOException {
         if (requiresNetCDFAttributes(query)) {
             Date time = extractTimeStampFromQuery(query);
-            return new NetCDFShapefileAttributeJoiningReader(super.getAttributesReader(true, query), featureDataset, shapefileJoinAttributeIndex, time);
+            return new NetCDFShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), featureDataset, shapefileJoinAttributeIndex, time);
         } else {
-            return super.getAttributesReader(readDBF, query);
+            return super.getAttributesReader(readDBF, query, properties);
         }
     }
     

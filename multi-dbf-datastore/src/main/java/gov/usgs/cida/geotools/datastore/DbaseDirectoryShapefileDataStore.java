@@ -147,11 +147,11 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
     }
 
     @Override
-    protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query) throws IOException {
+    protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query, String[] properties) throws IOException {
         if (requiresDbaseAttributes(query)) {
-            return new DbaseListShapefileAttributeJoiningReader(super.getAttributesReader(true, query), createDbaseReaderList(), shapefileJoinAttributeIndex);
+            return new DbaseListShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), createDbaseReaderList(), shapefileJoinAttributeIndex);
         } else {
-            return super.getAttributesReader(readDBF, query);
+            return super.getAttributesReader(readDBF, query, properties);
         }
     }
     
