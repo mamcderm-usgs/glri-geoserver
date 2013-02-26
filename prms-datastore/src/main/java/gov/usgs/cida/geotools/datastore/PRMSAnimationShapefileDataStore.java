@@ -131,13 +131,13 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
     }
 
     @Override
-    protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query) throws IOException {
+    protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query, String[] properties) throws IOException {
         if (requiresAnimationAttributes(query)) {
             DateTime timeStamp = extractTimeStampFromQuery(query);
             int timeStepIndex = timeStamp != null ? animationFileMetaData.getTimeStepIndex(timeStamp) : 0;
-            return new PRMSAnimationShapefileAttributeJoiningReader(super.getAttributesReader(true, query), animationFileMetaData, shapefileJoinAttributeIndex, animationJoinValueOffset, timeStepIndex);
+            return new PRMSAnimationShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), animationFileMetaData, shapefileJoinAttributeIndex, animationJoinValueOffset, timeStepIndex);
         } else {
-            return super.getAttributesReader(readDBF, query);
+            return super.getAttributesReader(readDBF, query, properties);
         }
     }
     
