@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
   
   <parent>
-    <artifactId>glri</artifactId>
     <groupId>gov.usgs.cida.glri</groupId>
+    <artifactId>glri-geoserver-parent</artifactId>
     <version>1-SNAPSHOT</version>
   </parent>
 
