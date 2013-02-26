@@ -38,19 +38,19 @@
         <groupId>gov.usgs.cida.jslibs</groupId>
         <artifactId>openlayers</artifactId>
         <type>war</type>
-        <version>2.12-2-SNAPSHOT</version>
+        <version>2.12-3</version>
     </dependency>
     <dependency>
         <groupId>gov.usgs.cida.jslibs</groupId>
         <artifactId>openlayers-decluster</artifactId>
         <type>war</type>
-        <version>2.12-2-SNAPSHOT</version>
+        <version>2.12-3</version>
     </dependency>
     <dependency>
         <groupId>gov.usgs.cida.jslibs</groupId>
         <artifactId>openlayers-raster</artifactId>
         <type>war</type>
-        <version>2.12-2-SNAPSHOT</version>
+        <version>2.12-3</version>
     </dependency>
   </dependencies>
 
