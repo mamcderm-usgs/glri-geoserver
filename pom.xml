@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>gov.usgs.cida.glri</groupId>
-    <artifactId>glri</artifactId>
+    <artifactId>glri-geoserver-parent</artifactId>
     <packaging>pom</packaging>
     <version>1-SNAPSHOT</version>
     
-    <name>GLRI</name>
+    <name>GLRI GeoServer Parent</name>
     
     <modules>
         <module>datastore-util</module>
@@ -27,6 +27,14 @@
 
     <repositories>
         <!-- must come before geoserver repository -->
+        <repository>
+            <id>cida-snapshots</id>
+            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-snapshots</url>
+        </repository>
+        <repository>
+            <id>cida-releases</id>
+            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-releases</url>
+        </repository>
         <repository>
             <id>cida-thirdparty</id>
             <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-thirdparty</url>
