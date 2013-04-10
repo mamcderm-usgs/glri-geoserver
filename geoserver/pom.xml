@@ -114,6 +114,7 @@
                                 <exclude>WEB-INF/lib/slf4j-api-1.5.8.jar</exclude>
                                 <exclude>WEB-INF/lib/slf4j-log4j12-1.4.2.jar</exclude>
                                 <exclude>WEB-INF/lib/log4j12-1.2.14.jar</exclude>
+                                <exclude>WEB-INF/lib/log4j-1.2.14.jar</exclude>
                                 <exclude>WEB-INF/lib/jdom-1.0.jar</exclude>
                                 <!--<exclude>WEB-INF/lib/je-4.1.10.jar</exclude>-->
                                 <!-- we use WEB-INF/web.xml as source for transform below,
