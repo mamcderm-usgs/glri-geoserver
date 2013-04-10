@@ -141,7 +141,13 @@ public class NetCDFUtil {
     }
     
     public static VariableSimpleIF getObservationTimeVariable(FeatureDataset featureDataset) {
-        return getObservationTimeVariable(featureDataset.getDataVariables());
+        // This works for Ragged representations, but not multdimensional.
+        VariableSimpleIF timeVariable = getObservationTimeVariable(featureDataset.getDataVariables());
+        if (timeVariable != null) {
+            return timeVariable;
+        }
+        // this works for multidimensional
+        return getObservationTimeVariable(featureDataset.getNetcdfFile().getVariables());
     }
     
     public static VariableSimpleIF getObservationTimeVariable(List<? extends VariableSimpleIF> variableList) {
@@ -167,8 +173,10 @@ public class NetCDFUtil {
     }
     
     public static boolean isObservationTimeVariable(VariableSimpleIF variable) {
-        Attribute attribute = variable.findAttributeIgnoreCase("_CoordinateAxisType");
-        return attribute != null && attribute.isString() && "Time".equals(attribute.getStringValue());
+        Attribute catAttribute = variable.findAttributeIgnoreCase("_CoordinateAxisType");
+        Attribute snAttribute = variable.findAttributeIgnoreCase("standard_name");
+        return  (catAttribute != null && catAttribute.isString() && "Time".equals(catAttribute.getStringValue())) ||
+                (snAttribute != null && snAttribute.isString() && "time".equals(snAttribute.getStringValue()));
     }
     
     public static boolean isStationIdVariable(VariableSimpleIF variable) {
