@@ -4,16 +4,10 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Composite;
-import java.awt.CompositeContext;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
-import java.awt.RenderingHints;
 import java.awt.Transparency;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
 import java.util.UUID;
 import org.geoserver.wps.gs.GeoServerProcess;
 import org.geotools.coverage.grid.GridCoordinates2D;
@@ -46,16 +40,13 @@ import org.opengis.referencing.operation.TransformException;
         title = "Flowline Raster",
         description = "Rasterize flowline by attribute",
         version = "1.0.0")
-public class FlowlineRasterProcess implements GeoServerProcess {
+public class FlowlineDecileRasterProcess implements GeoServerProcess {
 
     private static final int COORD_GRID_CHUNK_SIZE = 256;
 
     @DescribeResult(name = "coverage", description = "coverage")
     public GridCoverage2D execute(
             @DescribeParameter(name = "data", min = 1, max = 1) SimpleFeatureCollection data,
-            @DescribeParameter(name = "render-attribute", min = 1, max = 1) String renderAttribute,
-            @DescribeParameter(name = "precedence-attribute", min = 0, max = 1) String precedenceAttribute,
-            @DescribeParameter(name = "precedence-high", min = 0, max = 1) Boolean precedenceHigh,
             @DescribeParameter(name = "stroke-width", min = 1, max = 1) Float strokeWidth,
             @DescribeParameter(name = "bbox", min = 1, max = 1) ReferencedEnvelope bbox,
             @DescribeParameter(name = "width", min = 1, max = 1) Integer width,
@@ -63,9 +54,6 @@ public class FlowlineRasterProcess implements GeoServerProcess {
 
         return new Process(
                 data,
-                renderAttribute,
-                precedenceAttribute == null ? renderAttribute : precedenceAttribute,
-                precedenceHigh == null ? true : precedenceHigh.booleanValue(),
                 strokeWidth,
                 bbox,
                 width,
@@ -76,12 +64,7 @@ public class FlowlineRasterProcess implements GeoServerProcess {
     private class Process {
 
         private final SimpleFeatureCollection featureCollection;
-        
-        private final String renderAttributeName;
-        
-        private final String precedenceAttributeName;
-        private final boolean precedenceHigh;
-        
+                
         private final float renderStrokeWidth;
         
         private final ReferencedEnvelope coverageEnvelope;
@@ -96,17 +79,11 @@ public class FlowlineRasterProcess implements GeoServerProcess {
         private Graphics2D graphics;
 
         private Process(SimpleFeatureCollection featureCollection,
-                String renderAttributeName,
-                String precedenceAttributeName,
-                boolean precedenceHigh,
                 float strokeWidth,
                 ReferencedEnvelope coverageEnvelope,
                 int coverageWidth,
                 int coverageHeight) {
             this.featureCollection = featureCollection;
-            this.renderAttributeName = renderAttributeName;
-            this.precedenceAttributeName = precedenceAttributeName;
-            this.precedenceHigh = precedenceHigh;
             this.renderStrokeWidth = strokeWidth;
             this.coverageEnvelope = coverageEnvelope;
             this.coverageWidth = coverageWidth;
@@ -120,7 +97,7 @@ public class FlowlineRasterProcess implements GeoServerProcess {
             SimpleFeatureIterator featureIterator = featureCollection.features();
             try {
                 while (featureIterator.hasNext()) {
-                    processFeature(featureIterator.next(), renderAttributeName);
+                    processFeature(featureIterator.next());
                 }
             } finally {
                 featureIterator.close();
@@ -128,25 +105,14 @@ public class FlowlineRasterProcess implements GeoServerProcess {
 
             GridCoverageFactory gcf = new GridCoverageFactory();
             return gcf.create(
-                    FlowlineRasterProcess.class.getSimpleName() + "-" + UUID.randomUUID().toString(),
+                    FlowlineDecileRasterProcess.class.getSimpleName() + "-" + UUID.randomUUID().toString(),
                     image, coverageEnvelope);
         }
 
         private void initialize() {
 
-            AttributeDescriptor attributeDescriptor = featureCollection.getSchema().getDescriptor(renderAttributeName);
-            if (attributeDescriptor == null) {
-                throw new RuntimeException(renderAttributeName + " not found");
-            }
-
-            Class<?> attClass = attributeDescriptor.getType().getBinding();
-            if (!Number.class.isAssignableFrom(attClass)) {
-                throw new RuntimeException(renderAttributeName + " is not numeric type");
-            }
-
-            if (Float.class.isAssignableFrom(attClass) || Double.class.isAssignableFrom(attClass)) {
-                throw new RuntimeException(renderAttributeName + "is not integral type");
-            }
+            checkAttribute("QACDecile", Number.class);
+            checkAttribute("StreamOrde", Number.class);
 
             try {
                 checkTransform();
@@ -158,17 +124,29 @@ public class FlowlineRasterProcess implements GeoServerProcess {
 
             gridGeometry = new GridGeometry2D(new GridEnvelope2D(0, 0, coverageWidth, coverageHeight), coverageEnvelope);
         }
-
-        private void processFeature(SimpleFeature feature, String attributeName) throws Exception {
-            
-            Object attributeValue = feature.getAttribute(attributeName);
-            if (!(attributeValue instanceof Number)) {
-                // TODO: Log!
-                return;
+        
+        private void checkAttribute(String name, Class<?> binding) {
+            AttributeDescriptor attributeDescriptor = featureCollection.getSchema().getDescriptor(name);
+            if (attributeDescriptor == null) {
+                throw new RuntimeException(name + " not found");
             }
+        }
 
-            graphics.setColor(valueToColor(((Number) attributeValue).intValue()));
+        private void processFeature(SimpleFeature feature) throws Exception {
+
+            Object decileValueObject = feature.getAttribute("QACDecile");
+            if (!(decileValueObject instanceof Number)) {  return;  }
+
+            float decileValue = ((Number)decileValueObject).floatValue();
+            if (Float.isNaN(decileValue)) { return; }
+
+            Object streamOrdeObject = feature.getAttribute("StreamOrde");
+            if (!(streamOrdeObject instanceof Number)) {  return;  }
+            int streamOrdeValue = ((Number)streamOrdeObject).intValue();
+            if (streamOrdeValue <= 0) { return; }
             
+            graphics.setColor(JetColorMap.valueToColor(decileValue));
+
             Geometry geometry = (Geometry) feature.getDefaultGeometry();
             Geometries geomType = Geometries.get(geometry);
             switch (geomType) {
@@ -191,16 +169,17 @@ public class FlowlineRasterProcess implements GeoServerProcess {
                 default:
                 // TODO:  Log!
             }
+            
         }
 
         private void checkTransform() throws TransformException {
-
+            
             CoordinateReferenceSystem featuresCRS = featureCollection.getSchema().getCoordinateReferenceSystem();
-            CoordinateReferenceSystem requestCRS = coverageEnvelope.getCoordinateReferenceSystem();
+            CoordinateReferenceSystem coverageCRS = coverageEnvelope.getCoordinateReferenceSystem();
 
-            if (featuresCRS != null && requestCRS != null && !CRS.equalsIgnoreMetadata(requestCRS, featuresCRS)) {
+            if (featuresCRS != null && coverageCRS != null && !CRS.equalsIgnoreMetadata(coverageCRS, featuresCRS)) {
                 try {
-                    featureToRasterTransform = CRS.findMathTransform(featuresCRS, requestCRS, true);
+                    featureToRasterTransform = CRS.findMathTransform(featuresCRS, coverageCRS, true);
                 } catch (Exception ex) {
                     throw new TransformException("Unable to transform features into output coordinate reference system", ex);
                 }
@@ -222,7 +201,7 @@ public class FlowlineRasterProcess implements GeoServerProcess {
             image.setAccelerationPriority(1f);
             graphics = image.createGraphics();
             graphics.setStroke(new BasicStroke(renderStrokeWidth));
-            graphics.setComposite(new ClassComposite());
+//            graphics.setComposite(new ClassComposite());
         }
 
         private void drawGeometry(Geometries geomType, Geometry geometry) throws TransformException {
@@ -268,51 +247,74 @@ public class FlowlineRasterProcess implements GeoServerProcess {
                 // TODO:  Log!
             }
         }
-
-        private Color valueToColor(Number value) {
-            int valueAsInt = value.intValue();
-            return new Color(
-                    (valueAsInt      ) & 0xff,
-                    (valueAsInt >> 8 ) & 0xff,
-                    (valueAsInt >> 16) & 0xff);
-        }
     }
 
-    private static class ClassComposite implements Composite, CompositeContext {
-
-        public ClassComposite() {
-        }
-
-        @Override
-        public CompositeContext createContext(ColorModel sourceColorModel, ColorModel destinationColorModel, RenderingHints hints) {
-            return this;
-        }
-
-        @Override
-        public void dispose() {
-            // nothing to do...
-        }
-
-        @Override
-        public void compose(Raster sourceRaster, Raster destinationInRaster, WritableRaster destinationOutRaster) {
-            int xCount = destinationOutRaster.getWidth();
-            int yCount = destinationOutRaster.getHeight();
-
-            int[] sourcePixel = new int[4];
-            int[] destinationPixel = new int[4];
-            for (int x = 0; xCount > x; x++) {
-                for (int y = 0; yCount > y; y++) {
-                    sourceRaster.getPixel(x, y, sourcePixel);
-                    destinationInRaster.getPixel(x, y, destinationPixel);
-                    // TODO:  Only allows classes of up to 1 byte (255)
-                    int sC = sourcePixel[0];
-                    int dC = destinationPixel[0];
-                    if (sC > dC) {
-                        sourcePixel[3] = 255;
-                        destinationOutRaster.setPixel(x, y, sourcePixel);
-                    }
-                }
+//    private static class ClassComposite implements Composite, CompositeContext {
+//
+//        public ClassComposite() {
+//        }
+//
+//        @Override
+//        public CompositeContext createContext(ColorModel sourceColorModel, ColorModel destinationColorModel, RenderingHints hints) {
+//            return this;
+//        }
+//
+//        @Override
+//        public void dispose() {
+//            // nothing to do...
+//        }
+//
+//        @Override
+//        public void compose(Raster sourceRaster, Raster destinationInRaster, WritableRaster destinationOutRaster) {
+//            int xCount = destinationOutRaster.getWidth();
+//            int yCount = destinationOutRaster.getHeight();
+//
+//            int[] sourcePixel = new int[4];
+//            int[] destinationPixel = new int[4];
+//            for (int x = 0; xCount > x; x++) {
+//                for (int y = 0; yCount > y; y++) {
+//                    sourceRaster.getPixel(x, y, sourcePixel);
+//                    destinationInRaster.getPixel(x, y, destinationPixel);
+//                    // TODO:  Only allows classes of up to 1 byte (255)
+//                    int sC = sourcePixel[0];
+//                    int dC = destinationPixel[0];
+//                    if (sC > dC) {
+//                        sourcePixel[3] = 255;
+//                        destinationOutRaster.setPixel(x, y, sourcePixel);
+//                    }
+//                }
+//            }
+//        }
+//    }
+    
+    public static class JetColorMap  {
+        
+        public final static Color CLAMP_MIN = new Color(0f, 0f, 0.5f);
+        public final static Color CLAMP_MAX = new Color(0.5f, 0f, 0f);
+                
+        public static Color valueToColor(float coef) {
+            if (coef < 0) {
+                return CLAMP_MIN;
+            } else if (coef > 1) {
+                return CLAMP_MAX;
+            } else {
+                coef *= 4d;
+                float r = (float)Math.min(coef - 1.5, -coef + 4.5);
+                float g = (float)Math.min(coef - 0.5, -coef + 3.5);
+                float b = (float)Math.min(coef + 0.5, -coef + 2.5);
+                return new Color(
+                    r > 1f ? 1f : r < 0f ? 0f : r,
+                    g > 1f ? 1f : g < 0f ? 0f : g,
+                    b > 1f ? 1f : b < 0f ? 0f : b);
             }
+        }
+    }
+    
+    
+    public static void main(String[] args) {
+        for (int i = 0; i <= 10; ++i) {
+            float coef = (float)i / 10f;
+            System.out.println(String.format("%f #%06X", coef, (0xFFFFFF & JetColorMap.valueToColor(coef).getRGB())));
         }
     }
 }
