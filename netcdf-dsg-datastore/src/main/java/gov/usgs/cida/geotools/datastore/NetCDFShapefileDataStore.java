@@ -16,9 +16,8 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import ucar.nc2.VariableSimpleIF;
-import ucar.nc2.constants.FeatureType;
+import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.ft.FeatureDataset;
-import ucar.nc2.ft.FeatureDatasetFactoryManager;
 
 /**
  *
@@ -26,13 +25,16 @@ import ucar.nc2.ft.FeatureDatasetFactoryManager;
  */
 public class NetCDFShapefileDataStore extends ShapefileDataStore {
     
+    static {
+         NetcdfDataset.initNetcdfFileCache(32, 64, 600);
+         NetcdfDataset.setUseNaNs(false);
+    }
+    
     public final static String VARIABLE_KEY = "variable";
     public final static String EXTRACTOR_KEY = "extractor";
      
     private final URL netCDFURL;
     private final String shapefileStationAttributeName;
-    
-    private final FeatureDataset featureDataset;
     
     private VariableSimpleIF observationTimeVariable;
 
@@ -43,11 +45,6 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
         
         this.shapefileStationAttributeName = shapefileStationAttributeName;
         
-        featureDataset = FeatureDatasetFactoryManager.open(
-                    FeatureType.STATION,
-                    netCDFURL.toString(),
-                    null,
-                    new Formatter(System.err));
     }
 
     private List<AttributeDescriptor> shapefileAttributeDescriptors;
@@ -60,62 +57,72 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
     protected List<AttributeDescriptor> readAttributes() throws IOException {
         shapefileAttributeDescriptors = super.readAttributes();
         
-        List<VariableSimpleIF> observationVariables = NetCDFUtil.getObservationVariables(featureDataset);
-        observationTimeVariable = NetCDFUtil.getObservationTimeVariable(featureDataset);
+        FeatureDataset featureDataset = null;
         
-//        observationVariables.remove(observationTimeVariable);
-        VariableSimpleIF toRemove = null;
-        for (VariableSimpleIF variable : observationVariables) {
-            if (variable.getFullName().equals(observationTimeVariable.getFullName())) {
-                toRemove = variable;
+        try {
+            featureDataset = NetCDFUtil.acquireDataSet(netCDFURL);
+
+            List<VariableSimpleIF> observationVariables = NetCDFUtil.getObservationVariables(featureDataset);
+            observationTimeVariable = NetCDFUtil.getObservationTimeVariable(featureDataset);
+
+    //        observationVariables.remove(observationTimeVariable);
+            VariableSimpleIF toRemove = null;
+            for (VariableSimpleIF variable : observationVariables) {
+                if (variable.getFullName().equals(observationTimeVariable.getFullName())) {
+                    toRemove = variable;
+                }
+            }
+            if (toRemove != null) {
+                observationVariables.remove(toRemove);
+            }
+
+            netCDFAttributeDescriptors = new ArrayList<AttributeDescriptor>(observationVariables.size());
+
+            AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
+
+    //        int maxOccurs = // ...
+            netCDFAttributeDescriptors.add(atBuilder.
+    //                minOccurs(1).
+    //                maxOccurs(maxOccurs).
+    //                nillable(false).
+                    userData(VARIABLE_KEY, observationTimeVariable).
+                    userData(EXTRACTOR_KEY, new NetCDFPointFeatureExtractor.TimeStamp()).
+                    binding(Date.class).
+                    buildDescriptor(observationTimeVariable.getShortName()));
+
+            for (int observationVariableIndex = 0, observationVariableCount = observationVariables.size();
+                    observationVariableIndex < observationVariableCount; ++observationVariableIndex) {
+                VariableSimpleIF observationVariable = observationVariables.get(observationVariableIndex);
+                netCDFAttributeDescriptors.add(atBuilder.
+    //                minOccurs(1).
+    //                maxOccurs(maxOccurs).
+    //                nillable(false).
+                    userData(VARIABLE_KEY, observationVariable).
+                    userData(EXTRACTOR_KEY, NetCDFPointFeatureExtractor.generatePointFeatureExtractor(observationVariable)).
+                    binding(observationVariable.getDataType().getClassType()).
+                    buildDescriptor(observationVariable.getShortName()));
+            }
+
+            shapefileAttributeNames = new ArrayList<String>();
+            for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
+                shapefileAttributeNames.add(attributeDescriptor.getLocalName());
+            }
+            netCDFAttributeNames = new ArrayList<String>();
+            for (AttributeDescriptor attributeDescriptor : netCDFAttributeDescriptors) {
+                netCDFAttributeNames.add(attributeDescriptor.getLocalName());
+            }
+
+            attributeDescriptors = new ArrayList<AttributeDescriptor>(
+                    shapefileAttributeDescriptors.size() +
+                    netCDFAttributeDescriptors.size());
+            attributeDescriptors.addAll(shapefileAttributeDescriptors);
+            attributeDescriptors.addAll(netCDFAttributeDescriptors);
+
+        } finally {
+            if (featureDataset != null) {
+                featureDataset.close();
             }
         }
-        if (toRemove != null) {
-            observationVariables.remove(toRemove);
-        }
-
-        netCDFAttributeDescriptors = new ArrayList<AttributeDescriptor>(observationVariables.size());
-
-        AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
-
-//        int maxOccurs = // ...
-        netCDFAttributeDescriptors.add(atBuilder.
-//                minOccurs(1).
-//                maxOccurs(maxOccurs).
-//                nillable(false).
-                userData(VARIABLE_KEY, observationTimeVariable).
-                userData(EXTRACTOR_KEY, new NetCDFPointFeatureExtractor.TimeStamp()).
-                binding(Date.class).
-                buildDescriptor(observationTimeVariable.getShortName()));
-
-        for (int observationVariableIndex = 0, observationVariableCount = observationVariables.size();
-                observationVariableIndex < observationVariableCount; ++observationVariableIndex) {
-            VariableSimpleIF observationVariable = observationVariables.get(observationVariableIndex);
-            netCDFAttributeDescriptors.add(atBuilder.
-//                minOccurs(1).
-//                maxOccurs(maxOccurs).
-//                nillable(false).
-                userData(VARIABLE_KEY, observationVariable).
-                userData(EXTRACTOR_KEY, NetCDFPointFeatureExtractor.generatePointFeatureExtractor(observationVariable)).
-                binding(observationVariable.getDataType().getClassType()).
-                buildDescriptor(observationVariable.getShortName()));
-        }
-
-        shapefileAttributeNames = new ArrayList<String>();
-        for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
-            shapefileAttributeNames.add(attributeDescriptor.getLocalName());
-        }
-        netCDFAttributeNames = new ArrayList<String>();
-        for (AttributeDescriptor attributeDescriptor : netCDFAttributeDescriptors) {
-            netCDFAttributeNames.add(attributeDescriptor.getLocalName());
-        }
-
-        attributeDescriptors = new ArrayList<AttributeDescriptor>(
-                shapefileAttributeDescriptors.size() +
-                netCDFAttributeDescriptors.size());
-        attributeDescriptors.addAll(shapefileAttributeDescriptors);
-        attributeDescriptors.addAll(netCDFAttributeDescriptors);
-
         return attributeDescriptors;
     }
 
@@ -140,9 +147,9 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
                 SimpleFeatureType subTypeSchema = DataUtilities.createSubType(getSchema(), propertyNames.toArray(new String[0]));
                 boolean timeStampOnly = propertyNames.size() == 1 && observationTimeVariable.getShortName().equals(propertyNames.get(0));
                 if (timeStampOnly) {
-                    return new DefaultFeatureReader(new NetCDFTimeStampAttributeReader(featureDataset, subTypeSchema), subTypeSchema);
+                    return new DefaultFeatureReader(new NetCDFTimeStampAttributeReader(netCDFURL, subTypeSchema), subTypeSchema);
                 } else {
-                    return new DefaultFeatureReader(new NetCDFAttributeReader(featureDataset, subTypeSchema), subTypeSchema);
+                    return new DefaultFeatureReader(new NetCDFAttributeReader(netCDFURL, subTypeSchema), subTypeSchema);
                 }
             } catch (SchemaException ex) {
                 // hack
@@ -156,7 +163,7 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
         if (requiresNetCDFAttributes(query)) {
             Date time = extractTimeStampFromQuery(query);
             int joinIndex = Arrays.asList(properties).indexOf(shapefileStationAttributeName);
-            return new NetCDFShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), featureDataset, joinIndex, time);
+            return new NetCDFShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), netCDFURL, joinIndex, time);
         } else {
             return super.getAttributesReader(readDBF, query, properties);
         }
@@ -195,9 +202,6 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
     @Override
     public void dispose() {
         super.dispose();
-        if (featureDataset != null) {
-            try { featureDataset.close(); } catch (IOException e) { }
-        }
     }
 
 }
