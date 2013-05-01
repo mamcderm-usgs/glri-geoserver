@@ -1,11 +1,15 @@
 package gov.usgs.cida.geotools.datastore;
 
 import java.io.IOException;
+import java.net.URL;
+import java.util.Formatter;
 import java.util.NoSuchElementException;
 import org.geotools.data.AttributeReader;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
+import ucar.nc2.constants.FeatureType;
 import ucar.nc2.ft.FeatureDataset;
+import ucar.nc2.ft.FeatureDatasetFactoryManager;
 import ucar.nc2.ft.PointFeature;
 import ucar.nc2.ft.StationTimeSeriesFeature;
 import ucar.nc2.ft.StationTimeSeriesFeatureCollection;
@@ -16,14 +20,16 @@ import ucar.nc2.ft.StationTimeSeriesFeatureCollection;
  */
 public class NetCDFTimeStampAttributeReader implements AttributeReader {
     
+    private final FeatureDataset featureDataset;
     private final SimpleFeatureType featureType;
     private final StationTimeSeriesFeatureCollection stationTimeSeriesFeatureCollection;
     private final StationTimeSeriesFeature stationTimeSeriesFeature;
     private PointFeature pointFeature;
     
     
-    NetCDFTimeStampAttributeReader(FeatureDataset featureDataset, SimpleFeatureType featureType) throws IOException {
+    NetCDFTimeStampAttributeReader(URL netCDFURL, SimpleFeatureType featureType) throws IOException {
         this.featureType = featureType;
+        this.featureDataset = NetCDFUtil.acquireDataSet(netCDFURL);
         
         stationTimeSeriesFeatureCollection = NetCDFUtil.extractStationTimeSeriesFeatureCollection(featureDataset);
         stationTimeSeriesFeatureCollection.resetIteration();
@@ -49,6 +55,11 @@ public class NetCDFTimeStampAttributeReader implements AttributeReader {
     public void close() throws IOException {
         stationTimeSeriesFeature.finish();
         stationTimeSeriesFeatureCollection.finish();
+        try {
+            featureDataset.close();
+        } catch (IOException e) {
+            // don't care
+        }
     }
 
     @Override

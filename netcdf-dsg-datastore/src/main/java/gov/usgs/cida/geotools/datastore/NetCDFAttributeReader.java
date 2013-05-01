@@ -1,6 +1,7 @@
 package gov.usgs.cida.geotools.datastore;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.geotools.data.AttributeReader;
@@ -18,6 +19,7 @@ import ucar.nc2.time.CalendarDateRange;
  */
 public class NetCDFAttributeReader implements AttributeReader {
     
+    private final FeatureDataset featureDataset;
     private final SimpleFeatureType featureType;
     private final int attributeCount;
     
@@ -26,9 +28,11 @@ public class NetCDFAttributeReader implements AttributeReader {
     
     private PointFeature pointFeature;
 
-    NetCDFAttributeReader(FeatureDataset featureDataset, SimpleFeatureType featureType) throws IOException {
+    NetCDFAttributeReader(URL netCDFURL, SimpleFeatureType featureType) throws IOException {
         this.featureType = featureType;
         this.attributeCount = featureType.getAttributeCount();
+        
+        this.featureDataset = NetCDFUtil.acquireDataSet(netCDFURL);
         
         StationTimeSeriesFeatureCollection stationTimeSeriesFeatureCollection = NetCDFUtil.extractStationTimeSeriesFeatureCollection(featureDataset);
         
@@ -60,6 +64,11 @@ public class NetCDFAttributeReader implements AttributeReader {
     @Override
     public void close() throws IOException {
         pointFeatureCollection.finish();
+        try {
+            featureDataset.close();
+        } catch (IOException e) {
+            // don't care
+        }
     }
 
     @Override

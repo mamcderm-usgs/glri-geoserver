@@ -1,8 +1,10 @@
 package gov.usgs.cida.geotools.datastore;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Formatter;
 import java.util.List;
 import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
@@ -10,9 +12,12 @@ import ucar.nc2.Structure;
 import ucar.nc2.Variable;
 import ucar.nc2.VariableSimpleIF;
 import ucar.nc2.constants.CF;
+import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dataset.CoordinateAxis;
+import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.ft.FeatureCollection;
 import ucar.nc2.ft.FeatureDataset;
+import ucar.nc2.ft.FeatureDatasetFactoryManager;
 import ucar.nc2.ft.FeatureDatasetPoint;
 import ucar.nc2.ft.StationTimeSeriesFeatureCollection;
 
@@ -184,5 +189,13 @@ public class NetCDFUtil {
         Attribute cfRoleAttribute = variable.findAttributeIgnoreCase("cf_role");
         return (standardNameAttribute != null && standardNameAttribute.isString() && "station_id".equals(standardNameAttribute.getStringValue())) || 
                (cfRoleAttribute != null && cfRoleAttribute.isString() && "timeseries_id".equals(cfRoleAttribute.getStringValue()));
+    }
+    
+    public static FeatureDataset acquireDataSet(URL datasetURL) throws IOException {
+        return FeatureDatasetFactoryManager.wrap(
+                FeatureType.STATION,
+                NetcdfDataset.acquireDataset(datasetURL.toString(), null),
+                null,
+                new Formatter(System.err));
     }
 }

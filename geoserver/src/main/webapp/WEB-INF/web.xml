@@ -43,4 +43,8 @@
         <filter-name>CORS</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
+    <listener>
+        <description>NetCDFShutdownServletListener</description>
+        <listener-class>gov.usgs.cida.geotools.datastore.NetCDFShutdownServletListener</listener-class>
+    </listener>
 </web-app>

@@ -2,6 +2,7 @@ package gov.usgs.cida.geotools.datastore;
 
 import com.vividsolutions.jts.geom.Envelope;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -33,19 +34,19 @@ public class NetCDFShapefileAttributeJoiningReader  extends ShapefileAttributeRe
     
     private PointFeature pointFeature;
     
-    public NetCDFShapefileAttributeJoiningReader(ShapefileAttributeReader delegate, FeatureDataset featureDataset, int shapefileJoinAttributeIndex) throws IOException {
-        this(delegate, featureDataset, shapefileJoinAttributeIndex, null);
+    public NetCDFShapefileAttributeJoiningReader(ShapefileAttributeReader delegate, URL netCDFURL, int shapefileJoinAttributeIndex) throws IOException {
+        this(delegate, netCDFURL, shapefileJoinAttributeIndex, null);
     }
 
-    public NetCDFShapefileAttributeJoiningReader(ShapefileAttributeReader delegate, FeatureDataset featureDataset, int shapefileJoinAttributeIndex, Date timeStep) throws IOException {
+    public NetCDFShapefileAttributeJoiningReader(ShapefileAttributeReader delegate, URL netCDFURL, int shapefileJoinAttributeIndex, Date timeStep) throws IOException {
         super(hack(delegate), null, null); // lame duck
         this.delegate = delegate;
-        this.featureDataset = featureDataset;
+        this.featureDataset = NetCDFUtil.acquireDataSet(netCDFURL);
         this.shapefileJoinAttributeIndex = shapefileJoinAttributeIndex;
         this.timeStep = timeStep;
         
         this.stationTimeSeriesFeatureCollection = NetCDFUtil.extractStationTimeSeriesFeatureCollection(featureDataset);
-        stationTimeSeriesFeatureCollection.resetIteration();
+//        stationTimeSeriesFeatureCollection.resetIteration();
         
         int attributeCount = getAttributeCount();
         pointFeatureExtractors = new NetCDFPointFeatureExtractor<?>[attributeCount];
@@ -65,6 +66,13 @@ public class NetCDFShapefileAttributeJoiningReader  extends ShapefileAttributeRe
             /* don't care */
         }
         stationTimeSeriesFeatureCollection.finish();
+        if (featureDataset != null) {
+            try {
+                featureDataset.close();
+            } catch (IOException e) {
+            /* don't care */
+            }
+        }
     }
 
     @Override
