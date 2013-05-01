@@ -55,7 +55,6 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
     private List<AttributeDescriptor> attributeDescriptors;
     private ArrayList<String> shapefileAttributeNames;
     private ArrayList<String> netCDFAttributeNames;
-    private int shapefileJoinAttributeIndex;
     
     @Override
     protected List<AttributeDescriptor> readAttributes() throws IOException {
@@ -111,8 +110,6 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
             netCDFAttributeNames.add(attributeDescriptor.getLocalName());
         }
 
-        shapefileJoinAttributeIndex = shapefileAttributeNames.indexOf(shapefileStationAttributeName);
-
         attributeDescriptors = new ArrayList<AttributeDescriptor>(
                 shapefileAttributeDescriptors.size() +
                 netCDFAttributeDescriptors.size());
@@ -125,6 +122,17 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
     @Override
     protected FeatureReader<SimpleFeatureType, SimpleFeature> getFeatureReader(String typeName, Query query) throws IOException {
         if (requiresShapefileAttributes(query)) {
+            if (requiresNetCDFAttributes(query)) {
+                // make sure join attribute is in property list if we need to join!
+                String[] properties = query.getPropertyNames();
+                int joinIndex = Arrays.asList(properties).indexOf(shapefileStationAttributeName);
+                if (joinIndex == -1) {
+                    int tailIndex = properties.length;
+                    properties = Arrays.copyOf(properties, tailIndex + 1);
+                    properties[tailIndex] = shapefileStationAttributeName;
+                    query.setPropertyNames(properties);
+                }
+            }
             return super.getFeatureReader(typeName, query);
         } else {
             try {
@@ -147,7 +155,8 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
     protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query, String[] properties) throws IOException {
         if (requiresNetCDFAttributes(query)) {
             Date time = extractTimeStampFromQuery(query);
-            return new NetCDFShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), featureDataset, Arrays.binarySearch(properties, shapefileStationAttributeName), time);
+            int joinIndex = Arrays.asList(properties).indexOf(shapefileStationAttributeName);
+            return new NetCDFShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), featureDataset, joinIndex, time);
         } else {
             return super.getAttributesReader(readDBF, query, properties);
         }

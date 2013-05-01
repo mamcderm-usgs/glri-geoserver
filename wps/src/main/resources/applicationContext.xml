@@ -2,4 +2,5 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
     <bean id="flowlineRaster" class="gov.usgs.cida.geoserver.wps.FlowlineRasterProcess"/>
+    <bean id="flowlineDecileRaster" class="gov.usgs.cida.geoserver.wps.FlowlineDecileRasterProcess"/>
 </beans>
