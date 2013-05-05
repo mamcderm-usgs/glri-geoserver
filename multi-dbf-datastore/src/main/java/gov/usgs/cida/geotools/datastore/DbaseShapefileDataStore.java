@@ -32,8 +32,7 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
     private final String shapefileJoinAttributeName;
     
     private List<String> shapefileAttributeNames;
-    private List<String> dbaseAttributeNames;
-    private int shapefileJoinAttributeIndex;
+    private List<String> joinedDBaseAttributeNames;
     private Map<Object, Integer> fieldIndexMap;
 
     public DbaseShapefileDataStore(URI namespaceURI, URL dbaseFileURL, URL shapefileURL, String shapefileJoinAttributeName) throws MalformedURLException, IOException {
@@ -45,6 +44,21 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
         
         // NOTE: if this method is removed from constructor it should be synchronized...
         createDbaseReader();
+    }
+    
+    // NOTE:  not synchronized because this is called in contructor,
+    // synchronization of initialization of fileIndexMap is the concern...
+    private FieldIndexedDbaseFileReader createDbaseReader() throws IOException {
+        File dBaseFile = new File(dbaseFileURL.getFile());
+        FileChannel dBaseFileChannel = (new FileInputStream(dBaseFile)).getChannel();
+        FieldIndexedDbaseFileReader dbaseReader = new FieldIndexedDbaseFileReader(dBaseFileChannel);
+        if (fieldIndexMap == null) {
+            dbaseReader.buildFieldIndex(shapefileJoinAttributeName);
+            fieldIndexMap = Collections.unmodifiableMap(dbaseReader.getFieldIndex());
+        } else {
+            dbaseReader.setFieldIndex(fieldIndexMap);
+        }
+        return dbaseReader;
     }
 
     @Override
@@ -82,12 +96,10 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
         for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
             shapefileAttributeNames.add(attributeDescriptor.getLocalName());
         }
-        dbaseAttributeNames = new ArrayList<String>();
+        joinedDBaseAttributeNames = new ArrayList<String>();
         for (AttributeDescriptor attributeDescriptor : dbaseFileAttributeDescriptors) {
-            dbaseAttributeNames.add(attributeDescriptor.getLocalName());
+            joinedDBaseAttributeNames.add(attributeDescriptor.getLocalName());
         }
-
-        shapefileJoinAttributeIndex = shapefileAttributeNames.indexOf(shapefileJoinAttributeName);
             
         List<AttributeDescriptor> attributeDescriptors = new ArrayList<AttributeDescriptor>(
                 shapefileAttributeDescriptors.size() +
@@ -97,25 +109,21 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
 
         return attributeDescriptors;
     }
-
-    // NOTE:  not synchronized because this is called in contructor,
-    // synchronization of initialization of fileIndexMap is the concern...
-    private FieldIndexedDbaseFileReader createDbaseReader() throws IOException {
-        File dBaseFile = new File(dbaseFileURL.getFile());
-        FileChannel dBaseFileChannel = (new FileInputStream(dBaseFile)).getChannel();
-        FieldIndexedDbaseFileReader dbaseReader = new FieldIndexedDbaseFileReader(dBaseFileChannel);
-        if (fieldIndexMap == null) {
-            dbaseReader.buildFieldIndex(shapefileJoinAttributeName);
-            fieldIndexMap = Collections.unmodifiableMap(dbaseReader.getFieldIndex());
-        } else {
-            dbaseReader.setFieldIndex(fieldIndexMap);
-        }
-        return dbaseReader;
-    }
     
     @Override
     protected FeatureReader<SimpleFeatureType, SimpleFeature> getFeatureReader(String typeName, Query query) throws IOException {
         if (requiresShapefileAttributes(query)) {
+            if (requiresJoinedDbaseAttributes(query)) {
+                // make sure join attribute is in property list if we need to join!
+                String[] properties = query.getPropertyNames();
+                int joinIndex = Arrays.asList(properties).indexOf(shapefileJoinAttributeName);
+                if (joinIndex == -1) {
+                    int tailIndex = properties.length;
+                    properties = Arrays.copyOf(properties, tailIndex + 1);
+                    properties[tailIndex] = shapefileJoinAttributeName;
+                    query.setPropertyNames(properties);
+                }
+            }
             return super.getFeatureReader(typeName, query);
         } else {
             try {
@@ -131,7 +139,8 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
 
     @Override
     protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query, String[] properties) throws IOException {
-        if (requiresDbaseAttributes(query)) {
+        if (requiresJoinedDbaseAttributes(query)) {
+            int shapefileJoinAttributeIndex = Arrays.asList(properties).indexOf(shapefileJoinAttributeName);
             return new DbaseShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), createDbaseReader(), shapefileJoinAttributeIndex);
         } else {
             return super.getAttributesReader(readDBF, query, properties);
@@ -142,8 +151,8 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
         return QueryUtil.requiresAttributes(query, shapefileAttributeNames);
     }
     
-    private boolean requiresDbaseAttributes(Query query) {
-        return QueryUtil.requiresAttributes(query, dbaseAttributeNames);
+    private boolean requiresJoinedDbaseAttributes(Query query) {
+        return QueryUtil.requiresAttributes(query, joinedDBaseAttributeNames);
     }
     
     @Override

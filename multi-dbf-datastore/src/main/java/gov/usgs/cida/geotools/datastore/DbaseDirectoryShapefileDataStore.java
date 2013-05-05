@@ -29,20 +29,19 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
     public final static String KEY_FIELD_INDEX = "dbaseFieldIndex";
     public final static String KEY_READER_INDEX = "dbaseReaderIndex";
     
-    private final URL dBaseDirectoryURL;
+    private final URL joinedDBaseDirectoryURL;
     private final String shapefileJoinAttributeName;
     private final List<File> joinableDbaseFiles;
 
     private List<String> shapefileAttributeNames;
-    private List<String> dbaseAttributeNames;
-    private int shapefileJoinAttributeIndex;
+    private List<String> joinedDBaseAttributeNames;
     
     private Map<File, Map<Object, Integer>> fileFieldIndexMap = new HashMap<File, Map<Object, Integer>>();
     
     public DbaseDirectoryShapefileDataStore(URI namespaceURI, URL dbaseDirectoryURL, URL shapefileURL, String shapefileJoinAttributeName) throws MalformedURLException, IOException {
         super(shapefileURL, namespaceURI, true, true, ShapefileDataStore.DEFAULT_STRING_CHARSET);
         
-        this.dBaseDirectoryURL = dbaseDirectoryURL;
+        this.joinedDBaseDirectoryURL = dbaseDirectoryURL;
         
         this.shapefileJoinAttributeName = shapefileJoinAttributeName;
         
@@ -55,12 +54,31 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
         createDbaseReaderList();
     }
     
+    // NOTE:  not synchronized because this is called in contructor,
+    // synchronization of initialization of fileIndexMap is the concern...
+    private List<FieldIndexedDbaseFileReader> createDbaseReaderList() throws IOException {
+        List<FieldIndexedDbaseFileReader> dbaseReaderList = new ArrayList<FieldIndexedDbaseFileReader>(joinableDbaseFiles.size());
+        for (File dbaseFile : joinableDbaseFiles) {
+            FileChannel dbaseFileChannel = (new FileInputStream(dbaseFile)).getChannel();
+            FieldIndexedDbaseFileReader dbaseReader = new FieldIndexedDbaseFileReader(dbaseFileChannel);
+            Map<Object, Integer> fieldIndexMap = fileFieldIndexMap.get(dbaseFile);
+            if (fieldIndexMap == null) {
+                dbaseReader.buildFieldIndex(shapefileJoinAttributeName);
+                fileFieldIndexMap.put(dbaseFile, Collections.unmodifiableMap(dbaseReader.getFieldIndex()));
+            } else {
+                dbaseReader.setFieldIndex(fieldIndexMap);
+            }
+            dbaseReaderList.add(dbaseReader);
+        }
+        return dbaseReaderList;
+    }
+    
     @Override
     protected List<AttributeDescriptor> readAttributes() throws IOException {
         List<AttributeDescriptor> shapefileAttributeDescriptors = super.readAttributes();
         
         ArrayList<AttributeDescriptor> dbaseFileAttributeDescriptors = new ArrayList<AttributeDescriptor>();
-        dbaseAttributeNames = new ArrayList<String>();
+        joinedDBaseAttributeNames = new ArrayList<String>();
         
         List<FieldIndexedDbaseFileReader> dbaseReaderList = createDbaseReaderList();
         int dbaseReaderCount = dbaseReaderList.size();
@@ -86,7 +104,7 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
                 }
 
                 for (AttributeDescriptor attributeDescriptor : dbaseFileAttributeDescriptors) {
-                    dbaseAttributeNames.add(attributeDescriptor.getLocalName());
+                    joinedDBaseAttributeNames.add(attributeDescriptor.getLocalName());
                 }
 
             } finally {
@@ -100,7 +118,6 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
         for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
             shapefileAttributeNames.add(attributeDescriptor.getLocalName());
         }
-        shapefileJoinAttributeIndex = shapefileAttributeNames.indexOf(shapefileJoinAttributeName);
         
         List<AttributeDescriptor> attributeDescriptors = new ArrayList<AttributeDescriptor>(
                 shapefileAttributeDescriptors.size() +
@@ -111,28 +128,20 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
         return attributeDescriptors;
     }
     
-    // NOTE:  not synchronized because this is called in contructor,
-    // synchronization of initialization of fileIndexMap is the concern...
-    private List<FieldIndexedDbaseFileReader> createDbaseReaderList() throws IOException {
-        List<FieldIndexedDbaseFileReader> dbaseReaderList = new ArrayList<FieldIndexedDbaseFileReader>(joinableDbaseFiles.size());
-        for (File dbaseFile : joinableDbaseFiles) {
-            FileChannel dbaseFileChannel = (new FileInputStream(dbaseFile)).getChannel();
-            FieldIndexedDbaseFileReader dbaseReader = new FieldIndexedDbaseFileReader(dbaseFileChannel);
-            Map<Object, Integer> fieldIndexMap = fileFieldIndexMap.get(dbaseFile);
-            if (fieldIndexMap == null) {
-                dbaseReader.buildFieldIndex(shapefileJoinAttributeName);
-                fileFieldIndexMap.put(dbaseFile, Collections.unmodifiableMap(dbaseReader.getFieldIndex()));
-            } else {
-                dbaseReader.setFieldIndex(fieldIndexMap);
-            }
-            dbaseReaderList.add(dbaseReader);
-        }
-        return dbaseReaderList;
-    }
-    
     @Override
     protected FeatureReader<SimpleFeatureType, SimpleFeature> getFeatureReader(String typeName, Query query) throws IOException {
         if (requiresShapefileAttributes(query)) {
+            if (requiresJoinedDbaseAttributes(query)) {
+                // make sure join attribute is in property list if we need to join!
+                String[] properties = query.getPropertyNames();
+                int joinIndex = Arrays.asList(properties).indexOf(shapefileJoinAttributeName);
+                if (joinIndex == -1) {
+                    int tailIndex = properties.length;
+                    properties = Arrays.copyOf(properties, tailIndex + 1);
+                    properties[tailIndex] = shapefileJoinAttributeName;
+                    query.setPropertyNames(properties);
+                }
+            }
             return super.getFeatureReader(typeName, query);
         } else {
             try {
@@ -148,7 +157,8 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
 
     @Override
     protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query, String[] properties) throws IOException {
-        if (requiresDbaseAttributes(query)) {
+        if (requiresJoinedDbaseAttributes(query)) {
+            int shapefileJoinAttributeIndex = Arrays.asList(properties).indexOf(shapefileJoinAttributeName);
             return new DbaseListShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), createDbaseReaderList(), shapefileJoinAttributeIndex);
         } else {
             return super.getAttributesReader(readDBF, query, properties);
@@ -159,13 +169,13 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
         return QueryUtil.requiresAttributes(query, shapefileAttributeNames);
     }
     
-    private boolean requiresDbaseAttributes(Query query) {
-        return QueryUtil.requiresAttributes(query, dbaseAttributeNames);
+    private boolean requiresJoinedDbaseAttributes(Query query) {
+        return QueryUtil.requiresAttributes(query, joinedDBaseAttributeNames);
     }
     
     @Override
     protected String createFeatureTypeName() {
-        String path = dBaseDirectoryURL.getPath();
+        String path = joinedDBaseDirectoryURL.getPath();
         File file = new File(path);
         String name = file.getName();
         name = name.replace(',', '_'); // Are there other characters?
@@ -183,15 +193,15 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
     }
     
     private List<File> createJoinableDbaseFileList() throws IOException {
-        if(!"file".equals(dBaseDirectoryURL.getProtocol())) {
+        if(!"file".equals(joinedDBaseDirectoryURL.getProtocol())) {
             throw new IllegalArgumentException("only url \"file\" protocols accepted");
         }
-        File urlAsFile = new File(dBaseDirectoryURL.getPath());
+        File urlAsFile = new File(joinedDBaseDirectoryURL.getPath());
         if (!urlAsFile.canRead()) {
-            throw new IllegalArgumentException("can't read " + dBaseDirectoryURL);
+            throw new IllegalArgumentException("can't read " + joinedDBaseDirectoryURL);
         }
         if (!urlAsFile.isDirectory()) {
-            throw new IllegalArgumentException(dBaseDirectoryURL + " must be a directory");
+            throw new IllegalArgumentException(joinedDBaseDirectoryURL + " must be a directory");
         }
         List<File> joinableDbaseFiles = new ArrayList<File>();
         for (File child : urlAsFile.listFiles()) {
