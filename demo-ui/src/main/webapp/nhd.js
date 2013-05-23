@@ -3,10 +3,10 @@ var flowlineStyle = "FlowlineStreamOrder";
 var flowlineLayer = "glri:NHDFlowline";
 var gageLocStyle = "GageLocStreamOrder";
 var gageLocLayer = "glri:GageLoc";
+var geoserverBaseURL = "http://localhost:8080/geoserver/";
 //var geoserverBaseURL = "http://localhost:18080/glri-geoserver/";
-//var geoserverBaseURL = "http://localhost:8080/geoserver/";
 //var geoserverBaseURL = "http://cida-wiwsc-gdp2qa.er.usgs.gov:8084/lkm-geoserver/";
-var geoserverBaseURL = "http://internal.cida.usgs.gov/lkm-geoserver/";
+//var geoserverBaseURL = "http://internal.cida.usgs.gov/lkm-geoserver/";
 
 var streamOrderClipValues = [
     7, // 0
@@ -70,7 +70,8 @@ var gageFeature = new OpenLayers.Layer.Vector("GageLoc (WFS)", {
         featureNS: "http://cida.usgs.gov/glri"
     }),
     styleMap: gageStyleMap,
-    renderers: ['DeclusterCanvas']
+    renderers: ['DeclusterCanvas'], 
+    visibility: false
 });
 var updateGageStreamOrderFilter = function() {
     gageStreamOrderFilter.value = streamOrderClipValue;
@@ -189,43 +190,31 @@ var mapOptions = {
 //    units: "m",
     restrictedExtent: mapExtent,
     layers: [
-//        new OpenLayers.Layer.WMS(
-//            "Blue Marble",
-//            "http://maps.opengeo.org/geowebcache/service/wms",
-//            { layers: "bluemarble" }, { isBaseLayer: true }),
-//        new OpenLayers.Layer.ArcGIS93Rest(
-//            "World Imagery",
-//            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export", 
-//            {layers: "show:0"}),
         new OpenLayers.Layer.XYZ(
             "World Imagery",
             "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}",
-            { isBaseLayer: true, /*sphericalMercator : true, projection: "EPSG:102113",*/ units: "m" } ),
-        new OpenLayers.Layer.XYZ(
-            "World Physical Map",
-            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/${z}/${y}/${x}",
             { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
-//        new OpenLayers.Layer.XYZ(
-//            "World Shaded Relief",
-//            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/${z}/${y}/${x}",
-//            { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
+        new OpenLayers.Layer.XYZ(
+            "World Light Gray Base",
+            "http://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/${z}/${y}/${x}",
+            { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
+        new OpenLayers.Layer.XYZ(
+            "World Topo Map",
+            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}",
+            { isBaseLayer: true, /*sphericalMercator : true, projection: "EPSG:102113",*/ units: "m" } ),
         new OpenLayers.Layer.XYZ(
             "World Street Map",
             "http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}",
             { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
-//        new OpenLayers.Layer.XYZ(
-//            "World Terrain Base",
-//            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/${z}/${y}/${x}",
-//            { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
         new OpenLayers.Layer.XYZ(
-            "World Topo Map",
-            "http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}",
+            "World Terrain Base",
+            "http://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/${z}/${y}/${x}",
             { isBaseLayer: true, /*sphericalMercator : true, /*projection: "EPSG:102113",*/ units: "m" } ),
         flowlinesWMSData,
         gageWMSData,
         flowlineRaster,
-        gageRaster,
-        gageFeature
+        gageRaster
+        //gageFeature
     ],
     controls: [
         new OpenLayers.Control.Navigation({ dragPanOptions: { enableKinetic: true } } ),
@@ -318,6 +307,8 @@ for (var zoomIndex = 0; zoomIndex < streamOrderTable.length; ++zoomIndex) {
 
 var flowlineRasterWindow;
 var gageRasterWindow;
+var streamOrderZoomWindow;
+var streamOrderSliderWindow;
 
 
 
@@ -390,7 +381,7 @@ Ext.onReady(function() {
     
     streamOrderSlider = new Ext.slider.SingleSlider({
         fieldLabel: "Stream Order",
-        width: 120,
+        width: 255,
         value: streamOrderClipValue,
         increment: 1,
         minValue: 1,
@@ -422,8 +413,8 @@ Ext.onReady(function() {
         },
         true);
     
-    new Ext.Window({
-        title: "Stream Order",
+    streamOrderSliderWindow = new Ext.Window({
+        title: "Stream Order Slider",
         renderTo: Ext.getBody(),
         autoHeight: true,
         autoWidth: true,
@@ -436,7 +427,25 @@ Ext.onReady(function() {
         layout: 'form',
         labelAlign: 'right',
         items:[
-            streamOrderSlider,
+            streamOrderSlider
+        ]
+    }).show();
+    
+    streamOrderZoomWindow = new Ext.Window({
+        title: "Stream Order Zoom Selector",
+        renderTo: Ext.getBody(),
+        autoHeight: true,
+        autoWidth: true,
+        x: 50,
+        y: 10,
+        closable: false,
+        collapsible: true,
+        titleCollapse: true,
+        border: false,
+        layout: 'form',
+        labelAlign: 'right',
+        items:[
+//            streamOrderSlider,
             zoomLevelTextField,
             {
                 xtype: 'panel',
@@ -445,6 +454,8 @@ Ext.onReady(function() {
             }
         ]
     }).show();
+    streamOrderZoomWindow.collapse();
+    
         
     flowlineRasterWindow = new Ext.Window({
         title: "Flowline Properties",
@@ -519,7 +530,8 @@ Ext.onReady(function() {
                         flowlineRaster.onDataUpdate();
                     }
                 }
-            })
+            })//,
+//            streamOrderSlider
         ]
     }).show();
     

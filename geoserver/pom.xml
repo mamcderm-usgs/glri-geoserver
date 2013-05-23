@@ -60,11 +60,6 @@
             <type>war</type>
         </dependency>
         <dependency>
-            <groupId>org.geoserver.extension</groupId>
-            <artifactId>web-wps</artifactId>
-            <version>${geoserver.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
         </dependency>

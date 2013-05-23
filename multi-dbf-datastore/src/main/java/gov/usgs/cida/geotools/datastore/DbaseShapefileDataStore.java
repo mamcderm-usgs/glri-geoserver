@@ -31,8 +31,8 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
     private final URL dbaseFileURL;
     private final String shapefileJoinAttributeName;
     
-    private List<String> shapefileAttributeNames;
-    private List<String> joinedDBaseAttributeNames;
+    private Set<String> shapefileAttributeNames;
+    private Set<String> joinedDBaseAttributeNames;
     private Map<Object, Integer> fieldIndexMap;
 
     public DbaseShapefileDataStore(URI namespaceURI, URL dbaseFileURL, URL shapefileURL, String shapefileJoinAttributeName) throws MalformedURLException, IOException {
@@ -65,6 +65,11 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
     protected List<AttributeDescriptor> readAttributes() throws IOException {
         List<AttributeDescriptor> shapefileAttributeDescriptors = super.readAttributes();
         
+        shapefileAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
+            shapefileAttributeNames.add(attributeDescriptor.getLocalName());
+        }
+        
         List<AttributeDescriptor> dbaseFileAttributeDescriptors;
         
         FieldIndexedDbaseFileReader dbaseReader = null;
@@ -79,7 +84,7 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
 
             for (int dbaseFieldIndex = 0; dbaseFieldIndex < dbaseFieldCount; ++dbaseFieldIndex) {
                 String dbaseFieldName = dbaseFileHeader.getFieldName(dbaseFieldIndex);
-                if (!shapefileJoinAttributeName.equalsIgnoreCase(dbaseFieldName)) {
+                if (!shapefileAttributeNames.contains(dbaseFieldName)) {
                     dbaseFileAttributeDescriptors.add(atBuilder.
                         userData(KEY_FIELD_INDEX, dbaseFieldIndex).
                         binding(dbaseFileHeader.getFieldClass(dbaseFieldIndex)).
@@ -92,11 +97,7 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
             }
         }
             
-        shapefileAttributeNames = new ArrayList<String>();
-        for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
-            shapefileAttributeNames.add(attributeDescriptor.getLocalName());
-        }
-        joinedDBaseAttributeNames = new ArrayList<String>();
+        joinedDBaseAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
         for (AttributeDescriptor attributeDescriptor : dbaseFileAttributeDescriptors) {
             joinedDBaseAttributeNames.add(attributeDescriptor.getLocalName());
         }

@@ -33,8 +33,8 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
     private final String shapefileJoinAttributeName;
     private final List<File> joinableDbaseFiles;
 
-    private List<String> shapefileAttributeNames;
-    private List<String> joinedDBaseAttributeNames;
+    private Set<String> shapefileAttributeNames;
+    private Set<String> joinedDBaseAttributeNames;
     
     private Map<File, Map<Object, Integer>> fileFieldIndexMap = new HashMap<File, Map<Object, Integer>>();
     
@@ -77,8 +77,13 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
     protected List<AttributeDescriptor> readAttributes() throws IOException {
         List<AttributeDescriptor> shapefileAttributeDescriptors = super.readAttributes();
         
+        shapefileAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
+            shapefileAttributeNames.add(attributeDescriptor.getLocalName());
+        }
+        
         ArrayList<AttributeDescriptor> dbaseFileAttributeDescriptors = new ArrayList<AttributeDescriptor>();
-        joinedDBaseAttributeNames = new ArrayList<String>();
+        joinedDBaseAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
         
         List<FieldIndexedDbaseFileReader> dbaseReaderList = createDbaseReaderList();
         int dbaseReaderCount = dbaseReaderList.size();
@@ -94,7 +99,7 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
 
                 for (int dbaseFieldIndex = 0; dbaseFieldIndex < dbaseFieldCount; ++dbaseFieldIndex) {
                     String dbaseFieldName = dbaseFileHeader.getFieldName(dbaseFieldIndex);
-                    if (!shapefileJoinAttributeName.equalsIgnoreCase(dbaseFieldName)) {
+                    if (!shapefileAttributeNames.contains(dbaseFieldName) && !joinedDBaseAttributeNames.contains(dbaseFieldName)) {
                         dbaseFileAttributeDescriptors.add(atBuilder.
                             userData(KEY_READER_INDEX, dbaseReaderIndex).
                             userData(KEY_FIELD_INDEX, dbaseFieldIndex).
@@ -112,11 +117,6 @@ public class DbaseDirectoryShapefileDataStore extends ShapefileDataStore {
                     try { dbaseReader.close(); } catch (IOException ignore) {}
                 }
             }
-        }
-        
-        shapefileAttributeNames = new ArrayList<String>();
-        for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
-            shapefileAttributeNames.add(attributeDescriptor.getLocalName());
         }
         
         List<AttributeDescriptor> attributeDescriptors = new ArrayList<AttributeDescriptor>(
