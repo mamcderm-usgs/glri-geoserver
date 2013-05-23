@@ -36,6 +36,9 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
     private final URL netCDFURL;
     private final String shapefileStationAttributeName;
     
+    private Set<String> shapefileAttributeNames;
+    private Set<String> netCDFAttributeNames;
+    
     private VariableSimpleIF observationTimeVariable;
 
     public NetCDFShapefileDataStore(URI namespaceURI, URL netCDFURL, URL shapefileURL, String shapefileStationAttributeName) throws MalformedURLException, IOException {
@@ -46,19 +49,18 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
         this.shapefileStationAttributeName = shapefileStationAttributeName;
         
     }
-
-    private List<AttributeDescriptor> shapefileAttributeDescriptors;
-    private List<AttributeDescriptor> netCDFAttributeDescriptors;
-    private List<AttributeDescriptor> attributeDescriptors;
-    private ArrayList<String> shapefileAttributeNames;
-    private ArrayList<String> netCDFAttributeNames;
     
     @Override
     protected List<AttributeDescriptor> readAttributes() throws IOException {
-        shapefileAttributeDescriptors = super.readAttributes();
+        List<AttributeDescriptor> shapefileAttributeDescriptors = super.readAttributes();
+        
+        shapefileAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
+            shapefileAttributeNames.add(attributeDescriptor.getLocalName());
+        }
         
         FeatureDataset featureDataset = null;
-        
+        List<AttributeDescriptor> attributeDescriptors = null;
         try {
             featureDataset = NetCDFUtil.acquireDataSet(netCDFURL);
 
@@ -76,15 +78,11 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
                 observationVariables.remove(toRemove);
             }
 
-            netCDFAttributeDescriptors = new ArrayList<AttributeDescriptor>(observationVariables.size());
+            List<AttributeDescriptor> netCDFAttributeDescriptors = new ArrayList<AttributeDescriptor>(observationVariables.size());
 
             AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
 
-    //        int maxOccurs = // ...
             netCDFAttributeDescriptors.add(atBuilder.
-    //                minOccurs(1).
-    //                maxOccurs(maxOccurs).
-    //                nillable(false).
                     userData(VARIABLE_KEY, observationTimeVariable).
                     userData(EXTRACTOR_KEY, new NetCDFPointFeatureExtractor.TimeStamp()).
                     binding(Date.class).
@@ -93,21 +91,17 @@ public class NetCDFShapefileDataStore extends ShapefileDataStore {
             for (int observationVariableIndex = 0, observationVariableCount = observationVariables.size();
                     observationVariableIndex < observationVariableCount; ++observationVariableIndex) {
                 VariableSimpleIF observationVariable = observationVariables.get(observationVariableIndex);
-                netCDFAttributeDescriptors.add(atBuilder.
-    //                minOccurs(1).
-    //                maxOccurs(maxOccurs).
-    //                nillable(false).
-                    userData(VARIABLE_KEY, observationVariable).
-                    userData(EXTRACTOR_KEY, NetCDFPointFeatureExtractor.generatePointFeatureExtractor(observationVariable)).
-                    binding(observationVariable.getDataType().getClassType()).
-                    buildDescriptor(observationVariable.getShortName()));
+                String observationVariableName = observationVariable.getShortName();
+                if (!shapefileAttributeNames.contains(observationVariableName)) {
+                    netCDFAttributeDescriptors.add(atBuilder.
+                        userData(VARIABLE_KEY, observationVariable).
+                        userData(EXTRACTOR_KEY, NetCDFPointFeatureExtractor.generatePointFeatureExtractor(observationVariable)).
+                        binding(observationVariable.getDataType().getClassType()).
+                        buildDescriptor(observationVariableName));
+                }
             }
-
-            shapefileAttributeNames = new ArrayList<String>();
-            for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
-                shapefileAttributeNames.add(attributeDescriptor.getLocalName());
-            }
-            netCDFAttributeNames = new ArrayList<String>();
+            
+            netCDFAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
             for (AttributeDescriptor attributeDescriptor : netCDFAttributeDescriptors) {
                 netCDFAttributeNames.add(attributeDescriptor.getLocalName());
             }

@@ -1,8 +1,10 @@
 package gov.usgs.cida.geotools.datastore;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.Query;
 import org.geotools.filter.visitor.DefaultFilterVisitor;
@@ -19,7 +21,7 @@ import org.opengis.filter.expression.PropertyName;
  */
 public class QueryUtil {
   
-    public static boolean requiresAttributes(Query query, List<String> attributeNames) {
+    public static boolean requiresAttributes(Query query, Collection<String> attributeNames) {
         if (query == null) {
             return true;
         }

@@ -4,10 +4,16 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Composite;
+import java.awt.CompositeContext;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
+import java.awt.RenderingHints;
 import java.awt.Transparency;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
 import java.util.UUID;
 import org.geoserver.wps.gs.GeoServerProcess;
 import org.geotools.coverage.grid.GridCoordinates2D;
@@ -47,6 +53,7 @@ public class FlowlineDecileRasterProcess implements GeoServerProcess {
     @DescribeResult(name = "coverage", description = "coverage")
     public GridCoverage2D execute(
             @DescribeParameter(name = "data", min = 1, max = 1) SimpleFeatureCollection data,
+            @DescribeParameter(name = "colorize", min = 0, max = 1) Boolean colorize,
             @DescribeParameter(name = "stroke-width", min = 1, max = 1) Float strokeWidth,
             @DescribeParameter(name = "bbox", min = 1, max = 1) ReferencedEnvelope bbox,
             @DescribeParameter(name = "width", min = 1, max = 1) Integer width,
@@ -54,6 +61,7 @@ public class FlowlineDecileRasterProcess implements GeoServerProcess {
 
         return new Process(
                 data,
+                colorize == null ? true : colorize.booleanValue(),
                 strokeWidth,
                 bbox,
                 width,
@@ -64,6 +72,8 @@ public class FlowlineDecileRasterProcess implements GeoServerProcess {
     private class Process {
 
         private final SimpleFeatureCollection featureCollection;
+        
+        private final boolean colorize;
                 
         private final float renderStrokeWidth;
         
@@ -79,11 +89,13 @@ public class FlowlineDecileRasterProcess implements GeoServerProcess {
         private Graphics2D graphics;
 
         private Process(SimpleFeatureCollection featureCollection,
+                boolean colorize,
                 float strokeWidth,
                 ReferencedEnvelope coverageEnvelope,
                 int coverageWidth,
                 int coverageHeight) {
             this.featureCollection = featureCollection;
+            this.colorize = colorize;
             this.renderStrokeWidth = strokeWidth;
             this.coverageEnvelope = coverageEnvelope;
             this.coverageWidth = coverageWidth;
@@ -145,7 +157,17 @@ public class FlowlineDecileRasterProcess implements GeoServerProcess {
             int streamOrdeValue = ((Number)streamOrdeObject).intValue();
             if (streamOrdeValue <= 0) { return; }
             
-            graphics.setColor(JetColorMap.valueToColor(decileValue));
+            Color color;
+            if (colorize) {
+                color = JetColorMap.valueToColor(decileValue);
+            } else {
+                int valueAsInt = Math.round(decileValue * 100f);
+                color = new Color(
+                    (valueAsInt      ) & 0xff,
+                    (valueAsInt >> 8 ) & 0xff,
+                    (valueAsInt >> 16) & 0xff);
+            }
+            graphics.setColor(color);
 
             Geometry geometry = (Geometry) feature.getDefaultGeometry();
             Geometries geomType = Geometries.get(geometry);
@@ -201,7 +223,9 @@ public class FlowlineDecileRasterProcess implements GeoServerProcess {
             image.setAccelerationPriority(1f);
             graphics = image.createGraphics();
             graphics.setStroke(new BasicStroke(renderStrokeWidth));
-//            graphics.setComposite(new ClassComposite());
+            if (!colorize) {
+                graphics.setComposite(new ClassComposite());
+            }
         }
 
         private void drawGeometry(Geometries geomType, Geometry geometry) throws TransformException {
@@ -249,43 +273,43 @@ public class FlowlineDecileRasterProcess implements GeoServerProcess {
         }
     }
 
-//    private static class ClassComposite implements Composite, CompositeContext {
-//
-//        public ClassComposite() {
-//        }
-//
-//        @Override
-//        public CompositeContext createContext(ColorModel sourceColorModel, ColorModel destinationColorModel, RenderingHints hints) {
-//            return this;
-//        }
-//
-//        @Override
-//        public void dispose() {
-//            // nothing to do...
-//        }
-//
-//        @Override
-//        public void compose(Raster sourceRaster, Raster destinationInRaster, WritableRaster destinationOutRaster) {
-//            int xCount = destinationOutRaster.getWidth();
-//            int yCount = destinationOutRaster.getHeight();
-//
-//            int[] sourcePixel = new int[4];
-//            int[] destinationPixel = new int[4];
-//            for (int x = 0; xCount > x; x++) {
-//                for (int y = 0; yCount > y; y++) {
-//                    sourceRaster.getPixel(x, y, sourcePixel);
-//                    destinationInRaster.getPixel(x, y, destinationPixel);
-//                    // TODO:  Only allows classes of up to 1 byte (255)
-//                    int sC = sourcePixel[0];
-//                    int dC = destinationPixel[0];
-//                    if (sC > dC) {
-//                        sourcePixel[3] = 255;
-//                        destinationOutRaster.setPixel(x, y, sourcePixel);
-//                    }
-//                }
-//            }
-//        }
-//    }
+    private static class ClassComposite implements Composite, CompositeContext {
+
+        public ClassComposite() {
+        }
+
+        @Override
+        public CompositeContext createContext(ColorModel sourceColorModel, ColorModel destinationColorModel, RenderingHints hints) {
+            return this;
+        }
+
+        @Override
+        public void dispose() {
+            // nothing to do...
+        }
+
+        @Override
+        public void compose(Raster sourceRaster, Raster destinationInRaster, WritableRaster destinationOutRaster) {
+            int xCount = destinationOutRaster.getWidth();
+            int yCount = destinationOutRaster.getHeight();
+
+            int[] sourcePixel = new int[4];
+            int[] destinationPixel = new int[4];
+            for (int x = 0; xCount > x; x++) {
+                for (int y = 0; yCount > y; y++) {
+                    sourceRaster.getPixel(x, y, sourcePixel);
+                    destinationInRaster.getPixel(x, y, destinationPixel);
+                    // TODO:  Only allows classes of up to 1 byte (255)
+                    int sC = sourcePixel[0];
+                    int dC = destinationPixel[0];
+                    if (sC > dC) {
+                        sourcePixel[3] = 255;
+                        destinationOutRaster.setPixel(x, y, sourcePixel);
+                    }
+                }
+            }
+        }
+    }
     
     public static class JetColorMap  {
         

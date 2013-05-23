@@ -43,65 +43,53 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
         animationFileMetaData = PRMSAnimationFileMetaData.getMetaData(prmsAnimationURL);
     }
 
-    private List<AttributeDescriptor> shapefileAttributeDescriptors;
-    private List<AttributeDescriptor> animationAttributeDescriptors;
-    private List<AttributeDescriptor> attributeDescriptors;
-    private ArrayList<String> shapefileAttributeNames;
-    private ArrayList<String> animationAttributeNames;
-    private int shapefileJoinAttributeIndex;
+    private Set<String> shapefileAttributeNames;
+    private Set<String> animationAttributeNames;
+    
     private int animationJoinValueOffset;
     @Override
     protected List<AttributeDescriptor> readAttributes() throws IOException {
-        shapefileAttributeDescriptors = super.readAttributes();
-        
-        int recordEntryCount = animationFileMetaData.getRecordEntryCount();
-        
-        animationAttributeDescriptors = new ArrayList<AttributeDescriptor>(recordEntryCount);
-        
-        AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
-        
-//        int maxOccurs = animationFileMetaData.getTimeStepCount();
-        
-        animationAttributeDescriptors.add(atBuilder.
-//                minOccurs(1).
-//                maxOccurs(maxOccurs).
-//                nillable(false).
-                binding(Date.class).
-                buildDescriptor(ATTRIBUTE_TIMESTAMP));
-        animationAttributeDescriptors.add(atBuilder.
-//                minOccurs(1).
-//                maxOccurs(maxOccurs).
-//                nillable(false).
-                binding(Integer.class).
-                buildDescriptor(ATTRIBUTE_NHRU));          
-
-        
-        List<RecordEntryDescriptor> recordEntryDescriptors = animationFileMetaData.getRecordEntryDescriptors();
-        for (int recordEntryIndex = 2; recordEntryIndex < recordEntryCount; ++recordEntryIndex) {
-            RecordEntryDescriptor recordEntryDescriptor = recordEntryDescriptors.get(recordEntryIndex);
-            animationAttributeDescriptors.add(atBuilder.
-//                minOccurs(1).
-//                maxOccurs(maxOccurs).
-//                nillable(false).
-                binding(Float.class).
-                buildDescriptor(recordEntryDescriptor.getName()));
-        }
-        
+        List<AttributeDescriptor> shapefileAttributeDescriptors = super.readAttributes();
                 
-        shapefileAttributeNames = new ArrayList<String>();
+        shapefileAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
         for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
             shapefileAttributeNames.add(attributeDescriptor.getLocalName());
         }
-        animationAttributeNames = new ArrayList<String>();
+        
+        int recordEntryCount = animationFileMetaData.getRecordEntryCount();
+        
+        List<AttributeDescriptor> animationAttributeDescriptors = new ArrayList<AttributeDescriptor>(recordEntryCount);
+        
+        AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
+        
+        animationAttributeDescriptors.add(atBuilder.
+                binding(Date.class).
+                buildDescriptor(ATTRIBUTE_TIMESTAMP));
+        if (!shapefileAttributeNames.contains(ATTRIBUTE_NHRU)) {
+            animationAttributeDescriptors.add(atBuilder.
+                    binding(Integer.class).
+                    buildDescriptor(ATTRIBUTE_NHRU));
+        }
+
+        List<RecordEntryDescriptor> recordEntryDescriptors = animationFileMetaData.getRecordEntryDescriptors();
+        for (int recordEntryIndex = 2; recordEntryIndex < recordEntryCount; ++recordEntryIndex) {
+            RecordEntryDescriptor recordEntryDescriptor = recordEntryDescriptors.get(recordEntryIndex);
+            String recordEntryName = recordEntryDescriptor.getName();
+            if (!shapefileAttributeNames.contains(recordEntryName)) {
+                animationAttributeDescriptors.add(atBuilder.
+                    binding(Float.class).
+                    buildDescriptor(recordEntryName));
+            }
+        }
+        
+        animationAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
         for (AttributeDescriptor attributeDescriptor : animationAttributeDescriptors) {
             animationAttributeNames.add(attributeDescriptor.getLocalName());
         }
         
-        shapefileJoinAttributeIndex = shapefileAttributeNames.indexOf(shapefileNHRUAttributeName);
-        
         animationJoinValueOffset = ((Number)animationFileMetaData.getRecordEntryRanges().get(animationFileMetaData.getRecordEntryIndex("nhru")).getMinimum()).intValue();
         
-        attributeDescriptors = new ArrayList<AttributeDescriptor>(
+        List<AttributeDescriptor> attributeDescriptors = new ArrayList<AttributeDescriptor>(
                 shapefileAttributeDescriptors.size() +
                 animationAttributeDescriptors.size());
         attributeDescriptors.addAll(shapefileAttributeDescriptors);
@@ -112,6 +100,17 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
     @Override
     protected FeatureReader<SimpleFeatureType, SimpleFeature> getFeatureReader(String typeName, Query query) throws IOException {
         if (requiresShapefileAttributes(query)) {
+            if (requiresAnimationAttributes(query)) {
+                // make sure join attribute is in property list if we need to join!
+                String[] properties = query.getPropertyNames();
+                int joinIndex = Arrays.asList(properties).indexOf(shapefileNHRUAttributeName);
+                if (joinIndex == -1) {
+                    int tailIndex = properties.length;
+                    properties = Arrays.copyOf(properties, tailIndex + 1);
+                    properties[tailIndex] = shapefileNHRUAttributeName;
+                    query.setPropertyNames(properties);
+                }
+            }
             return super.getFeatureReader(typeName, query);
         } else {
             try {
@@ -135,7 +134,8 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
         if (requiresAnimationAttributes(query)) {
             DateTime timeStamp = extractTimeStampFromQuery(query);
             int timeStepIndex = timeStamp != null ? animationFileMetaData.getTimeStepIndex(timeStamp) : 0;
-            return new PRMSAnimationShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), animationFileMetaData, shapefileJoinAttributeIndex, animationJoinValueOffset, timeStepIndex);
+            int joinIndex = Arrays.asList(properties).indexOf(shapefileNHRUAttributeName);
+            return new PRMSAnimationShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), animationFileMetaData, joinIndex, animationJoinValueOffset, timeStepIndex);
         } else {
             return super.getAttributesReader(readDBF, query, properties);
         }
