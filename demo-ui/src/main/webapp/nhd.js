@@ -3,10 +3,7 @@ var flowlineStyle = "FlowlineStreamOrder";
 var flowlineLayer = "glri:NHDFlowline";
 var gageLocStyle = "GageLocStreamOrder";
 var gageLocLayer = "glri:GageLoc";
-var geoserverBaseURL = "http://localhost:8080/geoserver/";
-//var geoserverBaseURL = "http://localhost:18080/glri-geoserver/";
-//var geoserverBaseURL = "http://cida-wiwsc-gdp2qa.er.usgs.gov:8084/lkm-geoserver/";
-//var geoserverBaseURL = "http://internal.cida.usgs.gov/lkm-geoserver/";
+var geoserverBaseURL = "http://130.11.177.182:8080/geoserver/";
 
 var streamOrderClipValues = [
     7, // 0
@@ -33,51 +30,6 @@ var streamOrderClipValues = [
 ];
 
 var streamOrderClipValue = 0;
-
-// START - Gage Feature
-var gageDefaultStyle = new OpenLayers.Style({
-  'pointRadius': 6,
-  'fillColor' : '#ee9900',
-  'fillOpacity' : 0.4,
-  'strokeColor' : '#ee9900',
-  'strokeOpacity' : 1,
-  'strokeWidth' : 1
-});
-
-var gageSelectedStyle = new OpenLayers.Style({
-  'pointRadius': 6,
-  'fillColor' : '#ee9900',
-  'fillOpacity' : 0.4,
-  'strokeColor' : '#ffffff',
-  'strokeOpacity' : 1,
-  'strokeWidth' : 1
-});
-var gageStyleMap = new OpenLayers.StyleMap({
-    'default': gageDefaultStyle,
-    'select': gageSelectedStyle});
-var gageStreamOrderFilter = new OpenLayers.Filter.Comparison({
-    type: OpenLayers.Filter.Comparison.GREATER_THAN_OR_EQUAL_TO,
-    property: "StreamOrde",
-    value: streamOrderClipValue
-});
-var gageStreamOrderFilterStrategy = new OpenLayers.Strategy.Filter({filter: gageStreamOrderFilter});
-var gageFeature = new OpenLayers.Layer.Vector("GageLoc (WFS)", {
-    minScale: 15000000,
-    strategies: [new OpenLayers.Strategy.BBOX(), gageStreamOrderFilterStrategy],
-    protocol: new OpenLayers.Protocol.WFS({
-        url: geoserverBaseURL + "wfs",
-        featureType: "GageLoc",
-        featureNS: "http://cida.usgs.gov/glri"
-    }),
-    styleMap: gageStyleMap,
-    renderers: ['DeclusterCanvas'], 
-    visibility: false
-});
-var updateGageStreamOrderFilter = function() {
-    gageStreamOrderFilter.value = streamOrderClipValue;
-    gageStreamOrderFilterStrategy.setFilter(gageStreamOrderFilter);
-};
-// End Gage Feature
 
 // START - Flowline Raster
 var flowlinesWMSData = new OpenLayers.Layer.WMS(
@@ -214,7 +166,6 @@ var mapOptions = {
         gageWMSData,
         flowlineRaster,
         gageRaster
-        //gageFeature
     ],
     controls: [
         new OpenLayers.Control.Navigation({ dragPanOptions: { enableKinetic: true } } ),
@@ -276,9 +227,6 @@ var updateFromClipValue = function() {
     if (gageRaster.getVisibility()) {
         gageRaster.onDataUpdate();
     }
-    if (gageFeature.getVisibility()) {
-        updateGageStreamOrderFilter();
-    }
 };
 
 streamOrderTable = new Array(21);
@@ -316,25 +264,11 @@ Ext.onReady(function() {
     
     streamOrderClipValue = streamOrderClipValues[map.zoom];
     
-    // openlayers controls
-    var select = new OpenLayers.Control.SelectFeature(
-            gageFeature,
-            { hover: false } );
-    map.addControl(select);
-    select.activate();
-    
-    // openlayers events
-    gageFeature.events.on({
-        featureselected: function(event) {
-            var feature = event.feature;
-            var id = feature.attributes.key;
-            console.log("selected " + id);
-        }
-    });
-    
     updateFromFlowlineRasterVisibility = function() {
+        flowlinesWMSData.setVisibility(flowlineRaster.getVisibility());
         if (flowlineRasterWindow) {
             flowlineRasterWindow.setVisible(flowlineRaster.getVisibility());
+            
         }
     };
     flowlineRaster.events.on({
@@ -344,6 +278,7 @@ Ext.onReady(function() {
     });
 
     updateFromGageRasterVisibility = function() {
+        gageWMSData.setVisibility(gageRaster.getVisibility());
         if (gageRasterWindow) {
             gageRasterWindow.setVisible(gageRaster.getVisibility());
         }
