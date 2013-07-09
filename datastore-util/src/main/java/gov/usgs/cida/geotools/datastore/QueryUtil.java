@@ -73,7 +73,7 @@ public class QueryUtil {
                 Expression e2 = filter.getExpression2();
                 value = attemptExtract(e1, e2);
                 if (value == null) {
-                    attemptExtract(e2, e1);
+                    value = attemptExtract(e2, e1);
                 }
             }
             return null;

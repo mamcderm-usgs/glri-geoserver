@@ -117,7 +117,7 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
             if (requiresJoinedDbaseAttributes(query)) {
                 // make sure join attribute is in property list if we need to join!
                 String[] properties = query.getPropertyNames();
-                int joinIndex = Arrays.asList(properties).indexOf(shapefileJoinAttributeName);
+                int joinIndex = indexOfIgnoreCase(properties, shapefileJoinAttributeName);
                 if (joinIndex == -1) {
                     int tailIndex = properties.length;
                     properties = Arrays.copyOf(properties, tailIndex + 1);
@@ -141,7 +141,7 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
     @Override
     protected ShapefileAttributeReader getAttributesReader(boolean readDBF, Query query, String[] properties) throws IOException {
         if (requiresJoinedDbaseAttributes(query)) {
-            int shapefileJoinAttributeIndex = Arrays.asList(properties).indexOf(shapefileJoinAttributeName);
+            int shapefileJoinAttributeIndex = indexOfIgnoreCase(properties, shapefileJoinAttributeName);
             return new DbaseShapefileAttributeJoiningReader(super.getAttributesReader(true, query, properties), createDbaseReader(), shapefileJoinAttributeIndex);
         } else {
             return super.getAttributesReader(readDBF, query, properties);
@@ -179,5 +179,19 @@ public class DbaseShapefileDataStore extends ShapefileDataStore {
         super.dispose();
     }
 
+    private int indexOfIgnoreCase(String[] strings, String string) {
+        return indexOfIgnoreCase(Arrays.asList(strings), string);
+    }
+    
+    private int indexOfIgnoreCase(Collection<String> strings, String string) {
+        int index = 0;
+        for (String candidate : strings) {
+            if (string.equalsIgnoreCase(candidate)) {
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
 }
 
