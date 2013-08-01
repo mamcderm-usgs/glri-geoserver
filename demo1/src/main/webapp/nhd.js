@@ -1,9 +1,9 @@
 
 var flowlineStyle = "FlowlineStreamOrder";
-var flowlineLayer = "glri:NHDFlowline";
+var flowlineLayer = "NHDPlusFlowlines:PlusFlowlineVAA_NHDPlus-StreamOrder";
 var gageLocStyle = "GageLocStreamOrder";
 var gageLocLayer = "glri:GageLoc";
-var geoserverBaseURL = "http://130.11.177.182:8080/geoserver/";
+var geoserverBaseURL = "http://cida-wiwsc-wsdev.er.usgs.gov:8080/geoserver/";
 
 var streamOrderClipValues = [
     7, // 0
@@ -35,7 +35,7 @@ var streamOrderClipValue = 0;
 var flowlinesWMSData = new OpenLayers.Layer.WMS(
     "Flowline WMS (Data)",
     geoserverBaseURL + "wms",
-    { layers: flowlineLayer, styles: flowlineStyle, format: "image/png", tiled: "true" },
+    { layers: flowlineLayer, /*styles: flowlineStyle,*/ format: "image/png", tiled: "true" },
     { isBaseLayer: false, opacity: 0, displayInLayerSwitcher: false, tileOptions: { crossOriginKeyword: 'anonymous' } }
 );
 var flowlineRaster = new OpenLayers.Layer.Raster({
@@ -134,7 +134,8 @@ gageRaster.setData(gageClipOperationData);
 var mapProj = new OpenLayers.Projection("EPSG:900913");
 var wgs84Proj = new OpenLayers.Projection("EPSG:4326");
 
-var mapExtent = new OpenLayers.Bounds(-93.18993823245728, 40.398554803028716, -73.65211352945056, 48.11264392438207).transform(wgs84Proj, mapProj);
+//var mapExtent = new OpenLayers.Bounds(-93.18993823245728, 40.398554803028716, -73.65211352945056, 48.11264392438207).transform(wgs84Proj, mapProj);
+var mapExtent = new OpenLayers.Bounds(-13888506.999974832, 2819329.144525651, -7452820.806910905, 6281544.539895933);
 var mapCenterStart = mapExtent.getCenterLonLat();
 var mapOptions = {
     div: "map",

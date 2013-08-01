@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+  
+  <parent>
+    <groupId>gov.usgs.cida.glri</groupId>
+    <artifactId>glri-geoserver-parent</artifactId>
+    <version>1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>demo1</artifactId>
+  <packaging>war</packaging>
+
+  <name>GLRI Demo UI 1</name>
+  
+    <repositories>
+      <repository>
+          <id>nexus</id>
+          <name>CIDA Nexus</name>
+          <url>http://internal.cida.usgs.gov/maven/content/groups/public/</url>
+      </repository>
+    </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>gov.usgs.cida.jslibs</groupId>
+        <artifactId>extjs</artifactId>
+        <type>war</type>
+        <version>3.4.0-6</version>
+    </dependency>
+    <dependency>
+        <groupId>gov.usgs.cida.jslibs</groupId>
+        <artifactId>openlayers</artifactId>
+        <type>war</type>
+        <version>2.12-3</version>
+    </dependency>
+    <dependency>
+        <groupId>gov.usgs.cida.jslibs</groupId>
+        <artifactId>openlayers-decluster</artifactId>
+        <type>war</type>
+        <version>2.12-3</version>
+    </dependency>
+    <dependency>
+        <groupId>gov.usgs.cida.jslibs</groupId>
+        <artifactId>openlayers-raster</artifactId>
+        <type>war</type>
+        <version>2.12-3</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.0.2</version>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
