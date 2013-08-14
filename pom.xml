@@ -19,12 +19,77 @@
         <module>demo1</module>
         <module>demo2</module>
     </modules>
-    
+    <organization>
+        <name>Center for Integrated Data Analytics</name>
+        <url>http://cida.usgs.gov</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>Public Domain</name>
+            <url>http://en.wikipedia.org/wiki/Public_domain_software</url>
+            <comments>All work of the US Government enter into the Public Domain within
+                the United States.  Whether that work is public domain outside of
+                the United States depends on various factors.
+            </comments>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>tkunicki</id>
+            <name>Tom Kunicki</name>
+            <email>tkunicki@usgs.gov</email>
+            <organization>Center for Integrated Data Analytics</organization>
+            <organizationUrl>http://cida.usgs.gov</organizationUrl>
+            <timezone>-6</timezone>
+        </developer>
+        <developer>
+            <id>cschroed</id>
+            <name>Carl Schroedl</name>
+            <email>cschroedl@usgs.gov</email>
+            <organization>Center for Integrated Data Analytics</organization>
+            <organizationUrl>http://cida.usgs.gov</organizationUrl>
+            <timezone>-6</timezone>
+        </developer>
+    </developers> 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <geoserver.version>2.3.2</geoserver.version>
         <thredds.version>4.3.16</thredds.version>
     </properties>
+    <scm>
+        <url>https://github.com/USGS-CIDA/glri-geoserver</url>
+        <connection>scm:git:git@github.com:USGS-CIDA/glri-geoserver.git</connection>
+        <developerConnection>scm:git:git@github.com:USGS-CIDA/glri-geoserver.git</developerConnection>
+    </scm>
+    <distributionManagement>
+        <repository>
+            <id>cida-releases</id>
+            <name>CIDA Releases</name>
+            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>cida-snapshots</id>
+            <name>CIDA Snapshots</name>
+            <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>nexus</id>
+            <name>CIDA Nexus</name>
+            <url>http://internal.cida.usgs.gov/maven/content/groups/public/</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>plugin-nexus</id>
+            <name>CIDA Plugin repo</name>
+            <url>http://internal.cida.usgs.gov/maven/content/groups/public/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <repositories>
         <!-- must come before geoserver repository -->
