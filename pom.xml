@@ -5,10 +5,10 @@
     <groupId>gov.usgs.cida.glri</groupId>
     <artifactId>glri-geoserver-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0.0-SNAPSHOT</version>
-    
+    <version>1.0.0.1-SNAPSHOT</version>
+
     <name>GLRI GeoServer Parent</name>
-    
+
     <modules>
         <module>datastore-util</module>
         <module>prms-datastore</module>
@@ -51,7 +51,7 @@
             <organizationUrl>http://cida.usgs.gov</organizationUrl>
             <timezone>-6</timezone>
         </developer>
-    </developers> 
+    </developers>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <geoserver.version>2.3.2</geoserver.version>
@@ -173,7 +173,7 @@
 	        </dependency>
         </dependencies>
     </dependencyManagement>
-    
+
     <build>
         <pluginManagement>
             <plugins>
