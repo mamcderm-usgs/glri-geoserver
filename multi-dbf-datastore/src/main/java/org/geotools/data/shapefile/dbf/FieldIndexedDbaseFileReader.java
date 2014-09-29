@@ -34,15 +34,36 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
             throws IOException {
         super(fileChannel, useMemoryMappedBuffer, stringCharset, timeZone);
     }
-
-    // copied from IndexedDBaseFileReader.goTo(...)
-    public void setCurrentRecordByIndex(int recordIndex) throws IOException, UnsupportedOperationException {
-        if (recordIndex > header.getNumRecords() - 1) {
-            throw new IllegalArgumentException("recordIndex > recordCount");
-        }
+	
+	/**
+	 * Jump to the correct record based on a record number, which is ONE based.
+	 * 
+	 * Everman:  In Tom K.'s original code, I think the intention was that this
+	 * be 0 based, however, it was inconsistent in that usage, which resulted
+	 * in bad and skipped values for the first and last records.
+	 * 
+	 * To ensure a complete break from the old and inconsistent code, I'm changing
+	 * the method name from (the zero implying) setCurrentRecordByIndex to
+	 * setCurrentRecordByNumber.
+	 * 
+	 * According to Tom's notes, he copied this from IndexedDBaseFileReader.goTo(...)
+	 * however, it doesn't look much like that code.
+	 * 
+	 * 
+	 * 
+	 * @param recordNumber One based record number.
+	 * @throws IOException
+	 * @throws UnsupportedOperationException 
+	 */
+    public void setCurrentRecordByNumber(int recordNumber) throws IOException, UnsupportedOperationException {
+        if (recordNumber > header.getNumRecords()) {
+            throw new IllegalArgumentException("The recordNumber was greater than the recordCount");
+        } else if (recordNumber < 1) {
+			throw new IllegalArgumentException("The recordNumber is ONE based, but a call was made with a smaller value");
+		}
         
         long newPosition = this.header.getHeaderLength()
-                + this.header.getRecordLength() * (long) (recordIndex - 1);
+                + this.header.getRecordLength() * (long) (recordNumber - 1);
 
         if (this.useMemoryMappedBuffer) {
             if(newPosition < this.currentOffset || (this.currentOffset + buffer.limit()) < (newPosition + header.getRecordLength())) {
@@ -83,7 +104,7 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
         if (!indexMap.containsKey(value)) {
             return false;
         }
-        setCurrentRecordByIndex(indexMap.get(value));
+        setCurrentRecordByNumber(indexMap.get(value));
         return true;
     }
     
@@ -93,13 +114,13 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
         if (!(fieldIndex < fieldCount)) {
             throw new IllegalArgumentException("fieldIndex " + fieldIndex +  " >= " + fieldCount);
         }
-        setCurrentRecordByIndex(0);
+        setCurrentRecordByNumber(1);
         indexMap.clear();
         Object[] values = new Object[0];
-        for (int recordIndex = 0; hasNext(); ++recordIndex) {
+        for (int recordNumber = 1; hasNext(); ++recordNumber) {
             read(); // required when using readField
             Object value = readField(fieldIndex);
-            if (indexMap.put(value, recordIndex) != null) {
+            if (indexMap.put(value, recordNumber) != null) {
                 //throw new IllegalStateException("Record values at for field " + header.getFieldName(fieldIndex) + " are not unique, " + value + " already indexed.");
                 /*  TODO:  don't want to be this lenient, there should be some checking
                  *  if the join column values in the source DBF to guarantee we
