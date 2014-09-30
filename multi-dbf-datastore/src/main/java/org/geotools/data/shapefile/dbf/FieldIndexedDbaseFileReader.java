@@ -60,23 +60,19 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
 	 * According to Tom's notes, he copied this from IndexedDBaseFileReader.goTo(...)
 	 * however, it doesn't look much like that code.
 	 * 
-	 * 
-	 * 
-	 * @param recordIndex One based record number.
+	 * @param recordNumber One based record number.
 	 * @throws IOException
 	 * @throws UnsupportedOperationException
-	 * @deprecated This method will be renamed in the next release to name it
-	 *		setCurrentRecordByNumber to better indicated that it is one based.
 	 */
-    public void setCurrentRecordByIndex(int recordIndex) throws IOException, UnsupportedOperationException {
-        if (recordIndex > header.getNumRecords()) {
+    public void setCurrentRecordByNumber(int recordNumber) throws IOException, UnsupportedOperationException {
+        if (recordNumber > header.getNumRecords()) {
             throw new IllegalArgumentException("The recordNumber was greater than the recordCount");
-        } else if (recordIndex < 1) {
+        } else if (recordNumber < 1) {
 			throw new IllegalArgumentException("The recordNumber is ONE based, but a call was made with a smaller value");
 		}
         
         long newPosition = this.header.getHeaderLength()
-                + this.header.getRecordLength() * (long) (recordIndex - 1);
+                + this.header.getRecordLength() * (long) (recordNumber - 1);
 
         if (this.useMemoryMappedBuffer) {
             if(newPosition < this.currentOffset || (this.currentOffset + buffer.limit()) < (newPosition + header.getRecordLength())) {
@@ -117,7 +113,7 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
         if (!indexMap.containsKey(value)) {
             return false;
         }
-        setCurrentRecordByIndex(indexMap.get(value));
+        setCurrentRecordByNumber(indexMap.get(value));
         return true;
     }
     
@@ -127,7 +123,7 @@ public class FieldIndexedDbaseFileReader extends DbaseFileReader {
         if (!(fieldIndex < fieldCount)) {
             throw new IllegalArgumentException("fieldIndex " + fieldIndex +  " >= " + fieldCount);
         }
-        setCurrentRecordByIndex(1);
+        setCurrentRecordByNumber(1);
         indexMap.clear();
 		
 		int recordNumber = 1;	//We want to keep the number for checking when done;

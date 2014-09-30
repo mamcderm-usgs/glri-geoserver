@@ -90,7 +90,7 @@ public class FieldIndexedDbaseFileReaderTest {
 	 */
 	@Test(expected=IllegalArgumentException.class)
 	public void setCurrentRecordByIndexBoundLow() throws Exception {
-		dbaseReader.setCurrentRecordByIndex(0);
+		dbaseReader.setCurrentRecordByNumber(0);
 	}
 	
 	/**
@@ -99,7 +99,7 @@ public class FieldIndexedDbaseFileReaderTest {
 	 */
 	@Test(expected=IllegalArgumentException.class)
 	public void setCurrentRecordByIndexBoundHigh() throws Exception {
-		dbaseReader.setCurrentRecordByIndex(4);
+		dbaseReader.setCurrentRecordByNumber(4);
 	}
 	
 	@Test
