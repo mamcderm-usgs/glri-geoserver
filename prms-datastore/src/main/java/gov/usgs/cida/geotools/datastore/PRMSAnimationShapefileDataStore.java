@@ -27,11 +27,17 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
 
     private final static String ATTRIBUTE_TIMESTAMP = "timestamp";
     private final static String ATTRIBUTE_NHRU = "nhru";
+	
+	/** Attrib descriptor key to indicate which column the column is in the nhru file.  Value should be an Integer */
+	public final static String NHRU_FILE_ATTRIB_COLUMN = "NHRU_FILE_ATTRIB_COLUMN";
      
     private final URL animationURL;
-    private final String shapefileNHRUAttributeName;
+    private String shapefileNHRUAttributeName;	//not final so that it can be updated to the correct case
     
     private final PRMSAnimationFileMetaData animationFileMetaData;
+	
+	/** Combined list of attrib descriptors which is also used as a lock for building it.  Only an unmodifiable version is returned. */
+	private final List<AttributeDescriptor> attributeDescriptors = new ArrayList<AttributeDescriptor>();
 
     public PRMSAnimationShapefileDataStore(URI namespaceURI, URL prmsAnimationURL, URL shapefileURL, String shapefileNHRUAttributeName) throws MalformedURLException, IOException {
         super(shapefileURL, namespaceURI, true, true, ShapefileDataStore.DEFAULT_STRING_CHARSET);
@@ -41,60 +47,88 @@ public class PRMSAnimationShapefileDataStore extends ShapefileDataStore {
         this.shapefileNHRUAttributeName = shapefileNHRUAttributeName;
    
         animationFileMetaData = PRMSAnimationFileMetaData.getMetaData(prmsAnimationURL);
+		
+		
+		//Force reading of the attributes, which has the side-effect of normalizing
+		//the shapefileNHRUAttributeName to handle case issues.
+		this.readAttributes();
     }
 
     private Set<String> shapefileAttributeNames;
     private Set<String> animationAttributeNames;
     
     private int animationJoinValueOffset;
+	
     @Override
-    protected List<AttributeDescriptor> readAttributes() throws IOException {
-        List<AttributeDescriptor> shapefileAttributeDescriptors = super.readAttributes();
-                
-        shapefileAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
-        for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
-            shapefileAttributeNames.add(attributeDescriptor.getLocalName());
-        }
-        
-        int recordEntryCount = animationFileMetaData.getRecordEntryCount();
-        
-        List<AttributeDescriptor> animationAttributeDescriptors = new ArrayList<AttributeDescriptor>(recordEntryCount);
-        
-        AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
-        
-        animationAttributeDescriptors.add(atBuilder.
-                binding(Date.class).
-                buildDescriptor(ATTRIBUTE_TIMESTAMP));
-        if (!shapefileAttributeNames.contains(ATTRIBUTE_NHRU)) {
-            animationAttributeDescriptors.add(atBuilder.
-                    binding(Integer.class).
-                    buildDescriptor(ATTRIBUTE_NHRU));
-        }
+    protected final List<AttributeDescriptor> readAttributes() throws IOException {
+		
+		synchronized (attributeDescriptors) {
+			
+			if (attributeDescriptors.size() > 0) {
+				return Collections.unmodifiableList(attributeDescriptors);
+			} else {
 
-        List<RecordEntryDescriptor> recordEntryDescriptors = animationFileMetaData.getRecordEntryDescriptors();
-        for (int recordEntryIndex = 2; recordEntryIndex < recordEntryCount; ++recordEntryIndex) {
-            RecordEntryDescriptor recordEntryDescriptor = recordEntryDescriptors.get(recordEntryIndex);
-            String recordEntryName = recordEntryDescriptor.getName();
-            if (!shapefileAttributeNames.contains(recordEntryName)) {
-                animationAttributeDescriptors.add(atBuilder.
-                    binding(Float.class).
-                    buildDescriptor(recordEntryName));
-            }
-        }
-        
-        animationAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
-        for (AttributeDescriptor attributeDescriptor : animationAttributeDescriptors) {
-            animationAttributeNames.add(attributeDescriptor.getLocalName());
-        }
-        
-        animationJoinValueOffset = ((Number)animationFileMetaData.getRecordEntryRanges().get(animationFileMetaData.getRecordEntryIndex("nhru")).getMinimum()).intValue();
-        
-        List<AttributeDescriptor> attributeDescriptors = new ArrayList<AttributeDescriptor>(
-                shapefileAttributeDescriptors.size() +
-                animationAttributeDescriptors.size());
-        attributeDescriptors.addAll(shapefileAttributeDescriptors);
-        attributeDescriptors.addAll(animationAttributeDescriptors);
-        return attributeDescriptors;
+				List<AttributeDescriptor> shapefileAttributeDescriptors = super.readAttributes();
+
+				shapefileAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+				for (AttributeDescriptor attributeDescriptor : shapefileAttributeDescriptors) {
+					
+					String name = attributeDescriptor.getLocalName();
+					shapefileAttributeNames.add(name);
+					
+					//Update the shapefileNHRUAttributeName to be case correct
+					if (name.equalsIgnoreCase(shapefileNHRUAttributeName)) {
+						shapefileNHRUAttributeName = name;
+					}
+				}
+
+				int recordEntryCount = animationFileMetaData.getRecordEntryCount();
+
+				List<AttributeDescriptor> animationAttributeDescriptors = new ArrayList<AttributeDescriptor>(recordEntryCount);
+
+				AttributeTypeBuilder atBuilder = new AttributeTypeBuilder();
+
+
+				atBuilder.addUserData(NHRU_FILE_ATTRIB_COLUMN, 0);
+				animationAttributeDescriptors.add(atBuilder.
+						binding(Date.class).
+						buildDescriptor(ATTRIBUTE_TIMESTAMP));
+
+				atBuilder.addUserData(NHRU_FILE_ATTRIB_COLUMN, 1);
+				if (!shapefileAttributeNames.contains(ATTRIBUTE_NHRU)) {
+					animationAttributeDescriptors.add(atBuilder.
+							binding(Integer.class).
+							buildDescriptor(ATTRIBUTE_NHRU));
+				}
+
+				List<RecordEntryDescriptor> recordEntryDescriptors = animationFileMetaData.getRecordEntryDescriptors();
+				for (int recordEntryIndex = 2; recordEntryIndex < recordEntryCount; ++recordEntryIndex) {
+					RecordEntryDescriptor recordEntryDescriptor = recordEntryDescriptors.get(recordEntryIndex);
+					String recordEntryName = recordEntryDescriptor.getName();
+					if (!shapefileAttributeNames.contains(recordEntryName)) {
+
+						atBuilder.addUserData(NHRU_FILE_ATTRIB_COLUMN, recordEntryIndex);
+						animationAttributeDescriptors.add(atBuilder.
+							binding(Float.class).
+							buildDescriptor(recordEntryName));
+					}
+				}
+
+				animationAttributeNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+				for (AttributeDescriptor attributeDescriptor : animationAttributeDescriptors) {
+					animationAttributeNames.add(attributeDescriptor.getLocalName());
+				}
+
+				animationJoinValueOffset = ((Number)animationFileMetaData.getRecordEntryRanges().get(animationFileMetaData.getRecordEntryIndex("nhru")).getMinimum()).intValue();
+
+
+				attributeDescriptors.addAll(shapefileAttributeDescriptors);
+				attributeDescriptors.addAll(animationAttributeDescriptors);
+
+				return Collections.unmodifiableList(attributeDescriptors);
+			}
+		}
+		
     }
 
     @Override
