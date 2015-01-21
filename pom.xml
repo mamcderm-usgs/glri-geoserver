@@ -109,6 +109,11 @@
             <id>unidata-releases</id>
             <url>http://artifacts.unidata.ucar.edu/content/repositories/unidata-releases</url>
         </repository>
+        <repository>
+			<id>opengeo</id>
+			<name>Boundless Maven Repository</name>
+			<url>http://repo.boundlessgeo.com/main/</url>
+		</repository>
 <!--        <repository>
             <id>cida-tds-releases</id>
             <url>http://internal.cida.usgs.gov/maven/content/repositories/cida-tds-releases</url>
