@@ -2,3 +2,9 @@
 **/nb-configuration.xml
 **/nbactions.xml
 **/netbeans/
+.settings/
+.project
+.classpath
+**/.settings 
+**/.project
+**/.classpath
